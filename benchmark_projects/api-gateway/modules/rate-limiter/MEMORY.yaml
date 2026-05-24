@@ -1,0 +1,6 @@
+module: rate-limiter
+entries:
+- type: decision
+  content: "Sliding window over fixed buckets \u2014 smoother rate limiting"
+- type: discovery
+  content: Redis-backed counters needed for multi-instance deployment

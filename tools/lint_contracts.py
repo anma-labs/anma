@@ -983,7 +983,8 @@ def check_memory_files(root, contracts, conventions, result):
             result.error(mod_name,
                 f"MEMORY.yaml has {len(entries)} entries (max {max_entries})")
 
-        # Check total token budget (~4 chars per token, 500 token budget = ~2000 chars)
+        # Check total token budget (derived from max_entries * max_content_chars)
+        max_total_chars = max_entries * max_content_chars
         total_chars = 0
         for i, entry in enumerate(entries):
             if not isinstance(entry, dict):
@@ -1017,12 +1018,12 @@ def check_memory_files(root, contracts, conventions, result):
                 result.warning(mod_name,
                     f"MEMORY.yaml entry {i} content is multi-line (must be single-line)")
 
-        # Total budget check (~500 tokens ≈ 2000 chars)
-        max_total_chars = 2000
+        # Total budget check (derived from conventions)
         if total_chars > max_total_chars:
+            max_total_tokens = max_total_chars // 4
             result.error(mod_name,
                 f"MEMORY.yaml total content is {total_chars} chars "
-                f"(~{total_chars // 4} tokens, max ~500 tokens)")
+                f"(~{total_chars // 4} tokens, max ~{max_total_tokens} tokens)")
 
 
 # ---------------------------------------------------------------------------

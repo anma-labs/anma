@@ -51,6 +51,15 @@ context_budget:
   warn_tokens: 2000
   error_tokens: 3000
 
+# Single source of truth for token limits.
+# The linter reads these directly — do not hardcode elsewhere.
+# Note: 20 memory entries at max length (~652 tokens) plus a typical
+# contract will approach recovery_max. This is by design — it
+# pressures agents to curate MEMORY.yaml rather than fill all 20 slots.
+token_thresholds:
+  contract_max: 500        # P2: single CONTRACT.yaml (chars//4)
+  recovery_max: 800        # P6: CONTRACT + STATE + MEMORY combined
+
 module_types:
   valid: [regular, infrastructure]
   infrastructure_rules:
@@ -87,7 +96,7 @@ principles:
     rule: "Contracts describe behavior. Never reference implementations."
     enforced_by: "check_principles.py P1"
   - id: tokens-are-bottleneck
-    rule: "Single contract max 600 tokens. Recovery max 800 tokens."
+    rule: "Single contract within token_thresholds.contract_max. Recovery within token_thresholds.recovery_max."
     enforced_by: "check_principles.py P2"
   - id: state-is-explicit
     rule: "Non-draft STATE.yaml must reflect actual implementation status."
@@ -99,7 +108,7 @@ principles:
     rule: "Every module has a manager. No manager owns more than 7 modules."
     enforced_by: "check_principles.py P5"
   - id: recovery-is-cheap
-    rule: "Module recovery payload (CONTRACT+STATE+MEMORY) under 500 tokens."
+    rule: "Module recovery payload (CONTRACT+STATE+MEMORY) within token_thresholds.recovery_max."
     enforced_by: "check_principles.py P6"
   - id: replacement-over-continuity
     rule: "MEMORY.yaml is structured insights, not logs or code."

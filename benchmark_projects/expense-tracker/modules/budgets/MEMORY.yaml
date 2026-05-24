@@ -1,0 +1,4 @@
+module: budgets
+entries:
+- type: decision
+  content: "Monthly budgets only in v1 \u2014 weekly and annual later"

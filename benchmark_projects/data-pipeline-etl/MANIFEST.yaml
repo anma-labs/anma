@@ -1,0 +1,11 @@
+project: data-pipeline-etl
+managers:
+  ingestion:
+    modules:
+    - source-connectors
+    - transform
+    - loader
+  orchestration:
+    modules:
+    - scheduler
+    - monitoring

@@ -1,0 +1,16 @@
+project: headless-cms
+managers:
+  content:
+    modules:
+    - content-types
+    - entries
+    - media-library
+    - localization
+  delivery:
+    modules:
+    - api-delivery
+    - webhooks
+  admin:
+    modules:
+    - user-roles
+    - audit-log

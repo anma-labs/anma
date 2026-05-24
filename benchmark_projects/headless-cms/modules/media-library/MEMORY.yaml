@@ -1,0 +1,4 @@
+module: media-library
+entries:
+- type: decision
+  content: "Presigned URLs for upload \u2014 server never handles raw file bytes"

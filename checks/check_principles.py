@@ -76,17 +76,20 @@ def check_p1_contracts_over_code(root, contracts, result):
                     f"contracts describe WHAT, not HOW")
 
 
-def check_p2_tokens_are_bottleneck(root, contracts, result):
-    """P2: Single contract max 600 tokens."""
+def check_p2_tokens_are_bottleneck(root, contracts, result, conventions=None):
+    """P2: Single contract within token_thresholds.contract_max."""
+    max_tokens = 500  # fallback
+    if conventions:
+        max_tokens = conventions.get("token_thresholds", {}).get("contract_max", max_tokens)
     print("── Principle 2: Tokens are the bottleneck ──")
     for mod_name in contracts:
         contract_path = root / 'modules' / mod_name / 'CONTRACT.yaml'
         if not contract_path.exists():
             continue
         tokens = _count_chars(contract_path) // 4
-        if tokens > 600:
+        if tokens > max_tokens:
             result.warning(mod_name,
-                f"P2 contract is {tokens} tokens (max 600). "
+                f"P2 contract is {tokens} tokens (max {max_tokens}). "
                 f"Consider splitting or compressing invariants")
 
 
@@ -184,16 +187,19 @@ def check_p5_hierarchy_is_real(root, contracts, manifest, result):
                 f"P5 owns {len(modules)} modules (max 7): {', '.join(modules)}")
 
 
-def check_p6_recovery_is_cheap(root, contracts, result):
-    """P6: Module recovery (CONTRACT+STATE+MEMORY) under 1200 tokens."""
+def check_p6_recovery_is_cheap(root, contracts, result, conventions=None):
+    """P6: Module recovery (CONTRACT+STATE+MEMORY) within token_thresholds.recovery_max."""
+    max_tokens = 800  # fallback
+    if conventions:
+        max_tokens = conventions.get("token_thresholds", {}).get("recovery_max", max_tokens)
     print("── Principle 6: Recovery is cheap ──")
     for mod_name in contracts:
         module_dir = root / 'modules' / mod_name
         tokens = sum(_count_chars(module_dir / f) // 4
                      for f in ['CONTRACT.yaml', 'STATE.yaml', 'MEMORY.yaml'])
-        if tokens > 1200:
+        if tokens > max_tokens:
             result.warning(mod_name,
-                f"P6 module recovery is {tokens} tokens (max 1200)")
+                f"P6 module recovery is {tokens} tokens (max {max_tokens})")
 
 
 def check_p7_replacement_over_continuity(root, contracts, result):
@@ -221,9 +227,9 @@ def check_p7_replacement_over_continuity(root, contracts, result):
 def run(root, contracts, all_contracts, conventions, manifest, result):
     """Plugin entry point."""
     check_p1_contracts_over_code(root, contracts, result)
-    check_p2_tokens_are_bottleneck(root, contracts, result)
+    check_p2_tokens_are_bottleneck(root, contracts, result, conventions)
     check_p3_state_is_explicit(root, contracts, result)
     check_p4_communication_is_async(root, contracts, all_contracts, result)
     check_p5_hierarchy_is_real(root, contracts, manifest, result)
-    check_p6_recovery_is_cheap(root, contracts, result)
+    check_p6_recovery_is_cheap(root, contracts, result, conventions)
     check_p7_replacement_over_continuity(root, contracts, result)

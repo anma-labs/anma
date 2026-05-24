@@ -1,0 +1,5 @@
+module: budgets
+status: yellow
+updated: '2026-05-24T00:00:00Z'
+current_work: Budget CRUD done, real-time tracking pending
+blockers: []

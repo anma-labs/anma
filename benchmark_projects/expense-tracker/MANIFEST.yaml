@@ -1,0 +1,11 @@
+project: expense-tracker
+managers:
+  core:
+    modules:
+    - expense-entry
+    - receipt-scanner
+    - budgets
+  reporting:
+    modules:
+    - reports
+    - analytics

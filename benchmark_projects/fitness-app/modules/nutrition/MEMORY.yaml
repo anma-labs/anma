@@ -1,0 +1,4 @@
+module: nutrition
+entries:
+- type: decision
+  content: Food database seeded from USDA, community entries need verification

@@ -1,0 +1,6 @@
+module: feature-engineering
+entries:
+- type: decision
+  content: Fitted params saved with pipeline for train/inference parity
+- type: discovery
+  content: "Custom transforms need sandboxed execution \u2014 security concern"
