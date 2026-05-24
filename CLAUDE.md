@@ -142,15 +142,18 @@ python3 tools/new_module.py <name> --manager <manager> --consumes <deps>
 ## After contracts are ready
 
 1. For a new project: `python3 tools/init_project.py` to clear examples
-2. For each new module: `python3 tools/new_module.py <module-name>`
-3. Copy each `<module-name>-CONTRACT.yaml` into `modules/<module-name>/CONTRACT.yaml`
-4. Run `python3 tools/sync_all.py` to regenerate tests, graph, and manifest
-5. Run `python3 tools/lint_contracts.py` to verify — target 0 errors
-6. Open Claude Code in the project: `cd ~/your-project && claude`
-7. Tell Claude Code: "Read the `<module-name>` module CONTRACT.yaml and
+2. For each contract file, create the module directory and copy it in:
+   ```
+   mkdir -p modules/<module-name>
+   cp <module-name>-CONTRACT.yaml modules/<module-name>/CONTRACT.yaml
+   ```
+3. Run `python3 tools/sync_all.py` — this reads `consumes` from the
+   contracts, generates all missing files, rebuilds the graph and manifest
+   automatically
+4. Run `python3 tools/lint_contracts.py` to verify — target 0 errors
+5. Open Claude Code in your project: `cd ~/your-project && claude`
+6. Tell Claude Code: "Read the `<module-name>` module CONTRACT.yaml and
    ASSUMPTIONS.yaml. Implement all interfaces."
-   Claude Code reads the contracts and generates the code. It updates
-   STATE.yaml when done.
 
 When providing contracts as downloadable files, always name them
 `<module-name>-CONTRACT.yaml` (e.g. `user-auth-CONTRACT.yaml`,
