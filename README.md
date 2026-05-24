@@ -231,20 +231,20 @@ MEMORY.yaml keeps institutional knowledge — but capped at 20 entries, 100 char
 ### Contract Lifecycle
 Modules progress through: `draft` → `stable` → `frozen`. Frozen contracts can only be extended, never modified. This protects downstream consumers.
 
+## Designed For
+
+- **5-80 modules.** Small enough that one person can hold the full graph in their head. Large enough that unstructured projects fall apart. Most real software lives in this range.
+- **1-4 developers.** Teams where every person touches multiple modules and nobody has time to write onboarding docs. The contracts *are* the docs.
+- **AI agents as primary code consumers.** Contracts are structured for machine parsing first. Humans can read them fine — but the token budgets, the 6-file recovery pattern, and the explicit dependency graph exist because agents need them.
+
+ANMA is not designed for monoliths, microservice meshes with hundreds of services, or projects where humans never use AI tooling. It's a deliberate fit for the middle ground where most teams actually operate.
+
 ## Requirements
 
 - Python 3.8+
 - PyYAML (`pip install pyyaml`)
 
 No other dependencies. ANMA is a convention and a set of scripts, not a framework you install.
-
-## Roadmap
-
-- [ ] Automated contract-to-code validation
-- [ ] npx create-anma CLI installer
-- [ ] GitHub Actions CI workflow
-- [ ] VS Code extension for contract editing
-- [ ] ANMA Cloud dashboard
 
 ## Contributing
 
