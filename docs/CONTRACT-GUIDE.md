@@ -22,7 +22,9 @@ provides:
 
 consumes:
   - module: other-module
-    interfaces: [some_interface]
+    interface: some_interface
+    required: true
+    contract_version: 1
 
 contract_rules:
   adding_interface: allowed
@@ -181,21 +183,25 @@ Use when the call is:
 ```yaml
 consumes:
   - module: user-auth
-    interfaces: [verify_token]
+    interface: verify_token
+    required: true
+    contract_version: 1
 ```
 
-### BUS (`via: BUS`)
+### BUS events (via invariants)
 
-Use when the call is:
+Use when the communication is:
 - **Async** — fire-and-forget
 - **One-to-many** — multiple modules need to react
 - **Cross-cutting** — cleanup, notifications, logging
 
+Declare BUS events in the publishing interface's invariants:
+
 ```yaml
-consumes:
-  - module: user-auth
-    interfaces: [delete_account]
-    via: BUS
+provides:
+  - id: delete_account
+    invariants:
+      - "publishes account_deleted event via BUS"
 ```
 
 ### Examples
@@ -203,10 +209,10 @@ consumes:
 | Scenario | Type | Why |
 |----------|------|-----|
 | Verify JWT on every request | Direct | synchronous, frequent |
-| Send notification on todo complete | BUS | async, fire-and-forget |
-| Account deletion cleanup | BUS | one-to-many fan-out |
+| Send notification on todo complete | BUS invariant | async, fire-and-forget |
+| Account deletion cleanup | BUS invariant | one-to-many fan-out |
 | Get user profile for display | Direct | synchronous, frequent |
-| Log audit events | BUS | async, cross-cutting |
+| Log audit events | BUS invariant | async, cross-cutting |
 
 ## Contract Lifecycle
 
@@ -269,7 +275,9 @@ provides:
 ```yaml
 consumes:
   - module: user-auth
-    interfaces: [verify_token]
+    interface: verify_token
+    required: true
+    contract_version: 1
 
 provides:
   - id: do_something

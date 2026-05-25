@@ -36,7 +36,7 @@ project-root/
 │   ├── requests/
 │   └── deltas/
 │
-└── tools/                 # Linting, scaffolding, analysis (23 scripts)
+└── tools/                 # Linting, scaffolding, analysis (26 scripts)
 ```
 
 ## Context Loading Order
@@ -61,7 +61,7 @@ Declares what the module provides and what it consumes.
 ```yaml
 module: user-auth
 version: 1
-status: stable
+status: draft
 
 provides:
   - id: register
@@ -73,13 +73,14 @@ provides:
 
 consumes:
   - module: notifications
-    interfaces: [send_notification]
-    via: BUS
+    interface: send_notification
+    required: false
+    contract_version: 1
 ```
 
 Key fields:
 - **provides** — interfaces this module exposes. Each has typed inputs, outputs, possible errors, and behavioral invariants.
-- **consumes** — interfaces from other modules this one depends on. Specifies direct (synchronous) or BUS (async) consumption.
+- **consumes** — interfaces from other modules this one depends on. Each entry specifies the module, interface name, and whether it's required.
 - **contract_rules** — what changes are allowed: `allowed`, `notify`, `breaking`, or `forbidden`.
 - **status** — lifecycle stage: `draft` → `stable` → `frozen`.
 
@@ -87,8 +88,10 @@ Key fields:
 
 ```yaml
 module: user-auth
-current_task: "implement password reset flow"
-status: in_progress
+status: green
+updated: 2026-05-23T00:00:00Z
+
+current_work: "implement password reset flow"
 blockers:
   - "waiting on notifications module for email template support"
 ```
@@ -100,8 +103,10 @@ Updated by agents as they work. Other agents check this before filing cross-modu
 ```yaml
 module: user-auth
 entries:
-  - "decision: bcrypt over argon2 — library availability on Cloud Run"
-  - "warning: Apple OAuth returns relay emails, must handle in register"
+  - type: decision
+    content: "bcrypt over argon2 — library availability on Cloud Run"
+  - type: warning
+    content: "Apple OAuth returns relay emails, must handle in register"
 ```
 
 Capped at 20 entries, 100 characters each. Decisions supersede discoveries. Agents curate actively — delete stale entries before adding.
@@ -127,21 +132,23 @@ For synchronous, frequent, stable interfaces. Module A directly calls module B's
 ```yaml
 consumes:
   - module: user-auth
-    interfaces: [verify_token]
+    interface: verify_token
+    required: true
+    contract_version: 1
 ```
 
-### BUS Dependencies (`via: BUS`)
+### BUS Events
 
-For async, one-time, or fan-out communication. Module A publishes an event; interested modules subscribe.
+For async, one-to-many, or fire-and-forget communication, modules publish BUS events. These are declared in interface invariants, not in `consumes`:
 
 ```yaml
-consumes:
-  - module: todo-api
-    interfaces: [complete_todo]
-    via: BUS
+provides:
+  - id: complete_todo
+    invariants:
+      - "publishes todo_completed event via BUS"
 ```
 
-**Rule of thumb:** Direct when synchronous/frequent/stable. BUS when one-time/fire-and-forget/cross-cutting.
+**Rule of thumb:** `consumes` for synchronous calls. BUS invariants for async fan-out.
 
 ## Multi-Agent Workflows
 
