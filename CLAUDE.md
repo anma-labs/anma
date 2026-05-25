@@ -91,7 +91,15 @@ can't use for actual work.
 
 State must be explicit. If a module isn't in draft, its STATE.yaml should
 reflect what's actually implemented — not what you hope to build. Agents
-read STATE.yaml to decide what they can depend on right now.
+read STATE.yaml to decide what they can depend on right now. After
+implementing a module, update STATE.yaml with what's done:
+
+```yaml
+current_work: "All 5 interfaces implemented, 20 tests passing"
+```
+
+Update MEMORY.yaml with decisions and gotchas discovered during
+implementation — these help the next agent avoid repeating your mistakes.
 
 Communication between modules is async by default. Cross-module dependencies
 go through BUS events. If you find yourself wanting module A to directly call
@@ -143,18 +151,26 @@ python3 tools/new_module.py <name> --manager <manager> --consumes <deps>
 ## After contracts are ready
 
 1. For a new project: `python3 tools/init_project.py` to clear examples
-2. For each contract file, create the module directory and copy it in:
+2. Import all contract files at once:
    ```
-   mkdir -p modules/<module-name>
-   cp <module-name>-CONTRACT.yaml modules/<module-name>/CONTRACT.yaml
+   python3 tools/import_contracts.py <module-name>-CONTRACT.yaml [...]
    ```
-3. Run `python3 tools/sync_all.py` — this reads `consumes` from the
-   contracts, generates all missing files, rebuilds the graph and manifest
-   automatically
-4. Run `python3 tools/lint_contracts.py` to verify — target 0 errors
-5. Open Claude Code in your project: `cd ~/your-project && claude`
-6. Tell Claude Code: "Read the `<module-name>` module CONTRACT.yaml and
-   ASSUMPTIONS.yaml. Implement all interfaces."
+   This creates module directories, copies contracts, generates all missing
+   files (STATE, MEMORY, TESTS, GRAPH, MANIFEST), and runs the linter.
+3. Assign managers in MANIFEST.yaml — add `manager: <name>` to each module
+4. Run `python3 tools/lint_contracts.py --strict` — target 0 errors, 0 warnings
+5. Implement modules in dependency order — leaf modules first (no `consumes`),
+   then modules that depend on them, working up the graph:
+   ```
+   "Read the <module-name> CONTRACT.yaml and ASSUMPTIONS.yaml.
+    Implement all interfaces."
+   ```
+6. After implementing each module, update its STATE.yaml and MEMORY.yaml:
+   - STATE: what's implemented, how many tests pass, any blockers
+   - MEMORY: key decisions, gotchas, patterns discovered
+7. If implementation surfaces contract gaps (undeclared dependencies, missing
+   error codes, extra parameters), document them in ASSUMPTIONS.yaml. Then
+   revise the contracts and re-import with `--force`.
 
 When providing contracts as downloadable files, always name them
 `<module-name>-CONTRACT.yaml` (e.g. `user-auth-CONTRACT.yaml`,

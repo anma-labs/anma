@@ -24,17 +24,16 @@ Three example modules checked, 0 errors. Browse `modules/user-auth/CONTRACT.yaml
 
 ## Step 3: Design your contracts
 
-Upload `CLAUDE.md` and `CONVENTIONS.yaml` to any AI chat (Claude, ChatGPT, Gemini) and describe what you're building:
+Upload `CLAUDE.md` and `CONVENTIONS.yaml` to [Claude](https://claude.ai) and describe what you're building:
 
-> "I uploaded my ANMA scaffold files. I want to build a project management tool.
-> Teams can create projects, add tasks with deadlines, assign them to people,
-> and get notified when things change."
+> "I uploaded my ANMA scaffold files. I want to build a URL shortener with
+> auth, link management, analytics, and rate limiting."
 
-The AI drafts contracts, asks clarifying questions, and iterates with you. When ready:
+Claude drafts contracts, asks clarifying questions, and iterates with you. When ready:
 
 > "Give me all CONTRACT.yaml files so I can save them and run the linter."
 
-Save each file as `<module-name>-CONTRACT.yaml` (e.g. `task-mgmt-CONTRACT.yaml`).
+Claude provides them as downloadable files.
 
 ## Step 4: Import and validate
 
@@ -43,18 +42,55 @@ python3 tools/init_project.py                                 # clear example mo
 python3 tools/import_contracts.py ~/Downloads/*-CONTRACT.yaml  # import, sync, lint
 ```
 
-`import_contracts.py` creates module directories, copies contracts, generates supporting files (STATE, MEMORY, TESTS, GRAPH, MANIFEST), and runs the linter. One command.
+One command creates module directories, copies contracts, generates supporting
+files (STATE, MEMORY, TESTS, GRAPH, MANIFEST), and runs the linter. If there
+are errors, fix the contracts and re-import. Target 0 errors before moving on.
 
-## Step 5: Implement with Claude Code
+## Step 5: Assign managers
+
+Edit MANIFEST.yaml — add `manager: <name>` to each module entry and define
+manager groups:
+
+```yaml
+modules:
+  auth: { status: stable, manager: core }
+  links: { status: stable, manager: features }
+
+managers:
+  core: { owns: [auth, rate-limiter] }
+  features: { owns: [links, analytics] }
+```
+
+Run `python3 tools/lint_contracts.py --strict` — target 0 errors, 0 warnings.
+
+## Step 6: Implement with Claude Code
 
 ```bash
 claude
-> Read the task-mgmt module CONTRACT.yaml and implement all interfaces.
+> Read all module contracts and implement them.
 ```
 
-Claude Code reads the contract (~350 tokens), sees every interface, input, output, error, and invariant, and implements the module.
+Claude Code reads CLAUDE.md, knows the architecture, and implements each
+module. It handles dependency ordering, updates STATE.yaml with progress,
+and captures decisions in MEMORY.yaml.
 
-Repeat for each module. The contracts are the spec.
+## Step 7: Discover and revise
+
+If implementation surfaces contract gaps (undeclared dependencies, missing
+error codes), revise the contracts and re-import:
+
+```bash
+python3 tools/import_contracts.py revised-CONTRACT.yaml --force
+```
+
+Then update the implementation. Contracts catching integration bugs is ANMA
+working as designed.
+
+## Step 8: Wire and ship
+
+```bash
+> Create app.py that wires all modules together.
+```
 
 ## What's Next
 
