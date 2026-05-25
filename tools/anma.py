@@ -2,6 +2,8 @@
 """ANMA CLI — unified entry point for all ANMA scaffold tools.
 
 Usage:
+    anma init                                  # Clear examples, start fresh
+    anma import <files...> [--force]           # Import contract files
     anma lint [--module X] [--strict]
     anma module add <name> [--manager M] [--consumes X,Y] [--purpose P]
     anma module remove <name> --confirm [--force]
@@ -42,6 +44,8 @@ COMMANDS = {
     'diff':      ('contract_diff',   'Contract diff + BUS delta generator'),
     'test':      ('test_linter',    'Run unit tests'),
     'smoke':     ('smoke_test',     'Run smoke tests'),
+    'init':      ('init_project',   'Clear examples for a fresh project'),
+    'import':    ('import_contracts', 'Import contract files into project'),
 }
 
 # Subcommands with sub-subcommands
