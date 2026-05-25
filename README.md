@@ -2,132 +2,13 @@
 
 **Structured contracts that let AI agents understand your codebase in ~250 tokens instead of 5,000-20,000.**
 
+Built for Claude Code. Contracts are plain YAML — readable by any AI tool, but the full design-to-implementation workflow is optimized for Claude Code.
+
 ---
 
 ## The Problem
 
-AI coding agents waste 70-80% of their context window just *understanding* your codebase before they write a single line of code. Every file read, every dependency traced, every interface guessed — it all burns tokens and produces hallucinations.
-
-The result: expensive, slow, unreliable AI-assisted development.
-
-## The Solution
-
-ANMA replaces implicit knowledge with explicit YAML contracts. Each module declares exactly what it provides, what it consumes, its invariants, its errors, and its assumptions — in a format optimized for AI consumption.
-
-```yaml
-# ~30 lines. An AI agent knows everything it needs.
-module: user-auth
-version: 1
-status: stable
-
-provides:
-  - id: register
-    input: { email: string, password: string, display_name: string }
-    output: { user_id: uuid, token: string }
-    errors: [EMAIL_TAKEN, WEAK_PASSWORD, INVALID_EMAIL]
-    invariants:
-      - "auto-sends verification email"
-      - "password must be at least 8 characters"
-```
-
-No ambiguity. No guessing. No wasted tokens.
-
-## Getting Started
-
-### Try it (1 minute)
-
-```bash
-git clone https://github.com/nxy/anma-scaffold my-project
-cd my-project
-python3 tools/lint_contracts.py
-```
-
-You'll see 3 example modules pass with 0 errors. Browse `modules/user-auth/CONTRACT.yaml` to see what a contract looks like.
-
-### Start your project (5 minutes)
-
-**1. Design your contracts with Claude.**
-
-Upload `CLAUDE.md` and `CONVENTIONS.yaml` to [Claude](https://claude.ai) and describe what you're building:
-
-> "I uploaded my ANMA scaffold files. I want to build a project management tool.
-> Teams can create projects, add tasks with deadlines, assign them to people,
-> and get notified when things change."
-
-Claude acts as a contract architect — it asks questions, drafts contracts, and iterates with you. When the contracts look right:
-
-> "Give me all CONTRACT.yaml files so I can save them and run the linter."
-
-Save each file as `<module-name>-CONTRACT.yaml` (e.g. `user-auth-CONTRACT.yaml`).
-
-**2. Set up your project.**
-
-```bash
-cd my-project
-python3 tools/init_project.py                          # clear example modules
-python3 tools/import_contracts.py ~/Downloads/*-CONTRACT.yaml  # import your contracts
-```
-
-`import_contracts.py` creates the module directories, copies contracts into place, generates all supporting files (STATE, MEMORY, TESTS, GRAPH, MANIFEST), and runs the linter. One command.
-
-**3. Implement with Claude Code.**
-
-```bash
-claude
-```
-
-> "Read the user-auth module CONTRACT.yaml and ASSUMPTIONS.yaml.
-> Implement all interfaces."
-
-Claude Code reads the contract (~250 tokens), knows every interface, input, output, error, and invariant, and implements the module. No guessing. No hallucinating interfaces that don't exist.
-
-Repeat for each module. The contracts are the spec — Claude Code follows them.
-
-## Real Numbers
-
-This repo ships with 3 example modules (14 interfaces, ~350 tokens each) so you can explore the contract format and run the linter immediately.
-
-At scale, a production test scaffolded 18 modules with 104 interfaces in a single Claude Code session:
-
-| Metric | Value |
-|--------|-------|
-| Input tokens per session | ~14,600 |
-| Cache read tokens | ~32.8M |
-| Total API cost | $31 |
-| Modules scaffolded | 18 |
-| Interfaces implemented | 104 |
-| Tests generated | 239 |
-| Time (API) | 91 minutes |
-
-The contracts themselves are ~250 tokens each. A traditional codebase of comparable size would require 5,000-20,000 tokens per module just for an agent to orient itself.
-
-## How It Works
-
-```
-your-project/
-  CONVENTIONS.yaml      # Universal rules (error format, naming, lifecycle)
-  MANIFEST.yaml         # Module registry with status and ownership
-  GRAPH.yaml            # Auto-generated dependency graph
-  CLAUDE.md             # AI agent instructions
-  modules/
-    user-auth/
-      CONTRACT.yaml     # What this module provides and consumes
-      STATE.yaml        # Current work status and blockers
-      MEMORY.yaml       # Accumulated knowledge (max 20 entries)
-      CHANGELOG.yaml    # Version history
-      TESTS.yaml        # Contract-derived test cases
-      ASSUMPTIONS.yaml  # Implementation details (separate from contract)
-  BUS/                  # Inter-module communication
-  tools/                # Linting, scaffolding, analysis scripts
-```
-
-An agent picking up any module reads 6 files and has full context. No history needed. No onboarding. Design for replacement, not continuity.
-
-CLAUDE.md works with Claude Code, Cursor, Copilot, or any LLM that reads project files.
-
-## Before/After: Token Cost
-
-### Before ANMA (traditional codebase)
+AI coding agents burn most of their context window just *understanding* your codebase before writing a single line of code:
 
 ```
 Agent reads auth/controllers/user.py          → 850 tokens
@@ -143,62 +24,167 @@ Agent infers error types (hallucination risk) → ???
                                     Total: ~3,400+ tokens (one module)
 ```
 
-### After ANMA
+## The Solution
+
+Replace all of that with one contract:
+
+```yaml
+module: user-auth
+version: 1
+status: stable
+
+provides:
+  - id: register
+    input: { email: string, password: string, display_name: string }
+    output: { user_id: uuid, token: string }
+    errors: [EMAIL_TAKEN, WEAK_PASSWORD, INVALID_EMAIL]
+    invariants:
+      - "auto-sends verification email"
+      - "password must be at least 8 characters"
+
+  - id: login
+    input: { email: string, password: string }
+    output: { user_id: uuid, token: string }
+    errors: [INVALID_CREDENTIALS, ACCOUNT_LOCKED]
+    invariants:
+      - "locks account after 5 failed attempts"
+
+consumes:
+  - module: notifications
+    interface: send_notification
+    required: false
+```
 
 ```
 Agent reads modules/user-auth/CONTRACT.yaml   → 250 tokens
                                     Total: 250 tokens (complete understanding)
 ```
 
-**~14x reduction per module.** For 18 modules, that's ~61,000 tokens saved per session.
+**~14x reduction.** No ambiguity. No guessing. No wasted tokens.
+
+Tell an agent "implement all interfaces in this contract" and it knows every input, output, error, and behavioral guarantee without reading a single line of source code.
+
+## Getting Started
+
+### Try it (1 minute)
+
+```bash
+git clone https://github.com/nxy/anma-scaffold my-project
+cd my-project
+python3 tools/lint_contracts.py
+```
+
+Three example modules, 14 interfaces, 0 errors. Browse `modules/user-auth/CONTRACT.yaml` to see the full contract.
+
+### Start your project (5 minutes)
+
+You spend 10 minutes designing contracts upfront so your AI agent doesn't waste hours guessing later.
+
+**1. Design your contracts.**
+
+Upload `CLAUDE.md` and `CONVENTIONS.yaml` to any AI chat — Claude, ChatGPT, Gemini — and describe what you're building:
+
+> "I uploaded my ANMA scaffold files. I want to build a project management tool.
+> Teams can create projects, add tasks with deadlines, assign them to people,
+> and get notified when things change."
+
+The AI drafts contracts, asks clarifying questions, and iterates with you. When the contracts look right:
+
+> "Give me all CONTRACT.yaml files so I can save them and run the linter."
+
+Save each file as `<module-name>-CONTRACT.yaml`.
+
+**2. Import and validate.**
+
+```bash
+python3 tools/init_project.py                                 # clear example modules
+python3 tools/import_contracts.py ~/Downloads/*-CONTRACT.yaml  # import, sync, lint
+```
+
+One command creates module directories, copies contracts, generates all supporting files (STATE, MEMORY, TESTS, GRAPH, MANIFEST), and runs the linter.
+
+**3. Implement.**
+
+```bash
+claude
+> Read the user-auth module CONTRACT.yaml and implement all interfaces.
+```
+
+Claude Code reads the contract (~250 tokens), sees every interface, and implements the module. No hallucinated endpoints, no guessed error types, no missing invariants.
+
+## Real Numbers
+
+A production test scaffolded 18 modules with 104 interfaces in a single Claude Code session:
+
+| Metric | Value |
+|--------|-------|
+| Modules scaffolded | 18 |
+| Interfaces implemented | 104 |
+| Tests generated | 239 |
+| Input tokens per session | ~14,600 |
+| Total API cost | $31 |
+| Time | 91 minutes |
+
+This repo ships with 3 example modules (14 interfaces, ~350 tokens each) so you can explore the format immediately.
+
+## How It Works
+
+Each module is a directory with 6 small files — small enough for an agent to read in full. An agent recovering a module reads 3 of them (CONTRACT + STATE + MEMORY, ~250 tokens total). The others are generated by the tooling.
+
+```
+your-project/
+  CONVENTIONS.yaml      # Universal rules (naming, error format, token budgets)
+  MANIFEST.yaml         # Module registry with status and ownership
+  GRAPH.yaml            # Auto-generated dependency graph
+  CLAUDE.md             # Agent instructions (auto-read by Claude Code)
+  modules/
+    user-auth/
+      CONTRACT.yaml     # What this module provides and consumes
+      STATE.yaml        # Current work status and blockers
+      MEMORY.yaml       # Accumulated knowledge (max 20 entries, 100 chars each)
+      CHANGELOG.yaml    # Version history
+      TESTS.yaml        # Contract-derived test cases
+      ASSUMPTIONS.yaml  # Implementation details (separate from contract)
+  BUS/                  # Async inter-module communication
+  tools/                # 24 scripts for linting, scaffolding, and analysis
+```
+
+Contracts prescribe what code must do. Assumptions describe how it's built today. The separation means you can swap implementations without breaking the contract.
+
+Modules progress through a lifecycle: `draft` → `stable` → `frozen`. Frozen contracts can only be extended, never modified — protecting every module that depends on them.
 
 ## Tools
 
-Essential commands:
-
 ```bash
-python3 tools/init_project.py                    # Clear examples, start fresh
-python3 tools/import_contracts.py *.yaml         # Import contract files
-python3 tools/lint_contracts.py                  # Validate contracts (23 checks)
-python3 tools/lint_contracts.py --strict         # Zero-warning builds
-```
-
-The `tools/anma.py` CLI wraps all 24 tools:
-
-```bash
-python3 tools/anma.py init                       # Clear examples
-python3 tools/anma.py import contracts/*.yaml    # Import contracts
-python3 tools/anma.py lint                       # Validate
-python3 tools/anma.py lint --strict              # Strict mode
+python3 tools/anma.py init                       # Clear examples, start fresh
+python3 tools/anma.py import contracts/*.yaml    # Import contract files
+python3 tools/anma.py lint                       # Validate (23 checks + 7 principles)
+python3 tools/anma.py lint --strict              # Zero-warning builds
 python3 tools/anma.py module add billing         # Scaffold a new module
 python3 tools/anma.py graph                      # Regenerate dependency graph
 python3 tools/anma.py dashboard                  # Project health overview
 python3 tools/anma.py impact user-auth           # What breaks if auth changes?
 ```
 
-Run `python3 tools/anma.py` for the full list.
+Run `python3 tools/anma.py` for the full list. All tools also work standalone (e.g. `python3 tools/lint_contracts.py`).
 
-## Core Concepts
+## FAQ
 
-**Contracts over code.** CONTRACT.yaml is the single source of truth. Agents read contracts, not source code.
+**How is this different from OpenAPI / Swagger?**
+OpenAPI describes HTTP endpoints. ANMA describes module boundaries — interfaces, invariants, errors, dependencies, state, and institutional memory. You can use both: OpenAPI for your public API, ANMA for internal architecture.
 
-**Design for replacement.** Any agent can take over any module by reading its 6 files. No onboarding, no tribal knowledge.
+**Do I have to use Claude?**
+Design phase: any LLM. Implementation: tested with Claude Code, which auto-reads CLAUDE.md and follows the contract workflow.
 
-**Explicit dependencies.** GRAPH.yaml shows exactly what depends on what. No hidden imports, no circular dependencies.
+**Isn't this just writing documentation?**
+Documentation describes what code does. Contracts prescribe what code must do — with machine-parseable inputs, outputs, errors, and invariants that a linter enforces. Documentation drifts. Contracts break the build.
 
-**Memory with limits.** MEMORY.yaml keeps institutional knowledge — capped at 20 entries, 100 chars each. Forces curation over accumulation.
+**What size projects is this for?**
+5-80 modules, 1-4 developers. Most real software lives in this range.
 
-**Contract lifecycle.** Modules progress: `draft` → `stable` → `frozen`. Frozen contracts can only be extended, never modified.
+## License
 
-See [Architecture Overview](docs/ARCHITECTURE.md) for the full design and the 7 principles.
-
-## Designed For
-
-- **5-80 modules.** Small enough to hold the full graph in your head. Large enough that unstructured projects fall apart.
-- **1-4 developers.** Teams where everyone touches multiple modules and nobody has time for onboarding docs. The contracts *are* the docs.
-- **AI agents as primary code consumers.** Token budgets, the 6-file recovery pattern, and the explicit dependency graph exist because agents need them.
-
-ANMA is not for monoliths, microservice meshes with hundreds of services, or projects where humans never use AI tooling.
+[BSL 1.1](LICENSE) — free to use for any project. You can't use it to build a competing scaffold product. Converts to Apache 2.0 on May 23, 2029.
 
 ## Requirements
 
@@ -209,10 +195,10 @@ No other dependencies. ANMA is a convention and a set of scripts, not a framewor
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Documentation
 
-- [Architecture Overview](docs/ARCHITECTURE.md) — How ANMA works and the 7 design principles
+- [Architecture Overview](docs/ARCHITECTURE.md) — The 7 design principles
 - [Contract Guide](docs/CONTRACT-GUIDE.md) — Writing effective contracts
 - [Quickstart Guide](docs/QUICKSTART.md) — Detailed setup walkthrough
