@@ -43,7 +43,7 @@ project-root/
 │   ├── requests/
 │   └── deltas/
 │
-└── tools/                 # Linting, scaffolding, analysis (27 scripts)
+└── tools/                 # Linting, scaffolding, analysis (28 scripts)
 ```
 
 Flat (`modules/`) and domain (`domains/<domain>/`) layouts may coexist; the

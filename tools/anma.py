@@ -33,7 +33,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 COMMANDS = {
-    'lint':      ('lint_contracts', 'Lint contracts (22 checks)'),
+    'lint':      ('lint_contracts', 'Lint contracts (24 checks)'),
     'dashboard': ('dashboard',      'Project health dashboard'),
     'compat':    ('compat_matrix',  'Compatibility matrix'),
     'rename':    ('rename_project', 'Rename the project'),
