@@ -105,7 +105,7 @@ Use **Claude + ANMA** when your project has multiple modules that depend on each
 | **Integration bugs** | Often found at runtime | Caught earlier by linted contracts |
 | **Token usage at scale** | Thousands of tokens per module | Hundreds of tokens per module |
 
-ANMA is best for projects that have enough moving parts to need architectural memory — roughly **5–80 modules** and **1–4 developers**. For tiny scripts or one-off prototypes, it is probably more structure than you need.
+ANMA is best for projects that have enough moving parts to need architectural memory — roughly **5–200+ modules** and **1–10 developers**. For tiny scripts or one-off prototypes, it is probably more structure than you need.
 
 ---
 
