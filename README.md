@@ -123,7 +123,7 @@ Choose the workflow that matches how much control you want.
 Open [Claude](https://claude.ai) with Claude Opus 4.6+. Upload any product specs, design docs, wireframes, research files, or reference material, then start with:
 
 ```text
-Clone https://github.com/nxy/anma-scaffold and read CLAUDE.md and CONVENTIONS.yaml.
+Clone https://github.com/anma-labs/anma-scaffold and read CLAUDE.md and CONVENTIONS.yaml.
 Let me know when you're ready to build a project with me.
 ```
 
@@ -151,7 +151,7 @@ Create app.py that wires all modules together.
 Clone the scaffold and install the only dependency:
 
 ```bash
-git clone https://github.com/nxy/anma-scaffold my-project
+git clone https://github.com/anma-labs/anma-scaffold my-project
 cd my-project
 pip install pyyaml
 ```
@@ -205,6 +205,35 @@ Continue where we left off.
 ```
 
 Claude can recover from `STATE.yaml`, `MEMORY.yaml`, and the existing contracts instead of needing you to re-explain the project from scratch.
+
+### Parallel Development with Dynamic Workflows
+
+ANMA contracts define independent modules with explicit boundaries — the exact partition that Claude Code's dynamic workflows need to spawn parallel subagents.
+
+Instead of implementing 8 modules sequentially (40 minutes), tell Claude to parallelize:
+
+```text
+Read CLAUDE.md and CONVENTIONS.yaml. I want to build [description].
+Design the contracts first. Then create a dynamic workflow where each
+subagent implements one module from its contract. Each subagent should
+read CLAUDE.md and CONVENTIONS.yaml plus its assigned contract. After
+all modules are implemented, run the linter and verify everything integrates.
+```
+
+Each subagent reads one contract (~500 tokens) instead of the full conversation history (~60,000 tokens by turn 20). The result: 93% fewer input tokens and 76% lower API cost compared to sequential single-agent development.
+
+For multiple developers running parallel agents on the same repo, claim modules before starting to prevent conflicts:
+
+```bash
+git config core.hooksPath .githooks
+anma claim user-auth payments         # your scope
+# launch agents
+anma release user-auth payments       # when done
+```
+
+After all agents finish, derived files regenerate automatically on merge.
+
+Run `python3 tools/lint_contracts.py --strict` to verify nothing broke.
 
 ---
 
@@ -273,7 +302,7 @@ python3 tools/lint_contracts.py
 
 ## Real-World Results
 
-In a [4-module URL shortener demo](https://github.com/nxy/anma-demo-url-shortener), contracts caught 5 integration bugs during implementation, including undeclared dependencies, missing error codes, and absent BUS events.
+In a [4-module URL shortener demo](https://github.com/anma-labs/anma-demo-url-shortener), contracts caught 5 integration bugs during implementation, including undeclared dependencies, missing error codes, and absent BUS events.
 
 A larger production test scaffolded 18 modules with 104 interfaces in one Claude Code session:
 
