@@ -221,6 +221,14 @@ read CLAUDE.md and CONVENTIONS.yaml plus its assigned contract. After
 all modules are implemented, run the linter and verify everything integrates.
 ```
 
+For teams running multiple agents on the same repo, use claims to coordinate:
+
+```bash
+anma claim user-auth payments       # reserve modules before launching agents
+anma claims                          # see who owns what
+anma release user-auth payments     # release when done
+```
+
 For most projects, keep this simple: use dynamic workflows when the project has multiple independent modules, and always run the ANMA linter before merging changes.
 
 ---
@@ -247,6 +255,20 @@ your-project/
 
   BUS/                  # Async inter-module communication
   tools/                # Scripts for linting, scaffolding, and analysis
+```
+
+For larger projects, Claude organizes modules into domains with gateway-controlled boundaries:
+
+```text
+your-project/
+  domains/
+    backend/
+      GATEWAY.yaml        # Declares which interfaces other domains can use
+      user-auth/
+      payments/
+    frontend/
+      GATEWAY.yaml
+      web-ui/
 ```
 
 Contracts define **what the code must do**. Assumptions describe **how the current implementation does it**. That separation lets you replace implementation details without breaking dependent modules.
@@ -298,7 +320,7 @@ We built 3 projects three ways each — without ANMA, with ANMA (sequential), an
 |---|---:|---:|---:|
 | **Project 1: Finance Tracker (4 modules)** | | | |
 | Cost | $1.30 | $1.69 | $3.16 |
-| Wall time | 13m 48s | 8m 30s | 16m 39s |
+| API time | 6m 1s | 6m 32s | 15m 26s |
 | Runs first try | No | Yes | Yes |
 | Tests passing | 32 | 35 | 25 |
 | **Project 2: Task Manager (8 modules)** | | | |
@@ -332,7 +354,10 @@ Without ANMA, the agent re-reads your entire codebase to understand what exists 
 
 ANMA is not a tool for building faster on day one. It is a tool for building correctly across sessions, features, and team members.
 
-This repository includes 3 example modules with 14 interfaces so you can inspect the format immediately.
+Inspect the benchmark projects yourself:
+- [Finance Tracker](https://github.com/anma-labs/anma-demo-finance-tracker) — 4 modules
+- [Task Manager](https://github.com/anma-labs/anma-demo-task-manager) — 8 modules, BUS events
+- [E-commerce Backend](https://github.com/anma-labs/anma-demo-ecommerce) — 12 modules, 3 domains, GATEWAY enforcement
 
 ---
 
