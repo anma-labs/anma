@@ -372,7 +372,26 @@ All builds used Claude Opus 4.6 on Claude Max. Costs reflect API pricing, not su
 
 ANMA is not a tool for saving tokens or building faster. It is a tool for building correctly.
 
-The compounding advantage is architectural quality: explicit interfaces prevent integration bugs, BUS events decouple features cleanly, domain boundaries keep cross-module coupling visible, and contracts give every future session — human or AI — a reliable map of the system.
+The compounding advantage is architectural visibility. Every interface, dependency, invariant, and domain boundary is declared in machine-readable contracts — not buried in source code. The linter enforces those declarations, so violations are caught before implementation. And the contracts persist across sessions, so no future agent or team member has to reverse-engineer the architecture from scratch.
+
+Measured on the 12-module e-commerce benchmark (control vs ANMA Sequential):
+
+| What a new session gets | Control | ANMA |
+|---|---:|---:|
+| Declared interfaces | 0 | 36 |
+| Declared dependencies | 0 | 9 |
+| Declared invariants | 0 | 47 |
+| Domain gateways | 0 | 3 |
+| BUS event connections | 0 | 17 |
+| Architecture documentation (lines) | 0 | 1,000+ |
+
+The control produces code and nothing else. Every architectural decision lives only in the source files and must be re-inferred by every future session. ANMA externalizes those decisions into machine-readable contracts that any agent or developer can read without opening a single source file.
+
+Compare any two projects yourself with the included tool:
+
+```bash
+python3 tools/benchmark/compare_quality.py /path/to/control /path/to/anma
+```
 
 Inspect the benchmark projects yourself:
 - [Finance Tracker](https://github.com/anma-labs/anma-demo-finance-tracker) — 4 modules
