@@ -290,18 +290,47 @@ python3 tools/lint_contracts.py
 
 ## Real-World Results
 
-In a [4-module URL shortener demo](https://github.com/anma-labs/anma-demo-url-shortener), contracts caught 5 integration bugs during implementation, including undeclared dependencies, missing error codes, and absent BUS events.
+We built 3 projects three ways each — without ANMA, with ANMA (sequential), and with ANMA + dynamic workflows — to measure what contracts actually cost and what they give you.
 
-A larger production test scaffolded 18 modules with 104 interfaces in one Claude Code session:
+### Benchmark: 3 projects, 9 builds
 
-| Metric | Result |
-|---|---:|
-| Modules scaffolded | 18 |
-| Interfaces implemented | 104 |
-| Tests generated | 239 |
-| Input tokens per session | ~14,600 |
-| Total API cost | $31 |
-| Time | 91 minutes |
+| | Control | ANMA Sequential | ANMA + Dynamic Workflows |
+|---|---:|---:|---:|
+| **Project 1: Finance Tracker (4 modules)** | | | |
+| Cost | $1.30 | $1.69 | $3.16 |
+| Wall time | 13m 48s | 8m 30s | 16m 39s |
+| Runs first try | No | Yes | Yes |
+| Tests passing | 32 | 35 | 25 |
+| **Project 2: Task Manager (8 modules)** | | | |
+| Cost | $1.53 | $2.40 | $8.64 |
+| API time | 7m 28s | 11m 29s | 31m 32s |
+| Runs first try | Yes | Yes | Yes |
+| Tests passing | 42 | 75 | 60 |
+| **Project 3: E-commerce (12 modules, 3 domains)** | | | |
+| Cost | $2.00 | $3.39 | $5.36 |
+| API time | 6m 45s | 12m 24s | 22m 36s |
+| Runs first try | Yes | Yes | Yes |
+| Tests passing | 42 | 35 | 29 |
+
+All builds used Claude Opus 4.6 on Claude Max. Costs reflect API pricing, not subscription.
+
+### What the data shows
+
+**ANMA costs more on the first build** — 1.3–1.7x for sequential, 2.4–3.6x for dynamic workflows. The overhead is real: designing contracts, running the linter, and reading CONVENTIONS.yaml adds work before implementation starts.
+
+**ANMA runs correctly on first try.** The control failed on Project 1 (wrong entry point, manual fix needed). All 6 ANMA builds ran with `uvicorn app:app` on first attempt.
+
+**ANMA produces more thorough tests at medium scale.** Project 2 (8 modules): 75 tests with ANMA vs 42 without — 78% more coverage from the same prompt.
+
+**ANMA produces architecture, not just code.** Every ANMA build generates contracts, dependency graphs, BUS event wiring, and domain boundaries that persist across sessions. The control produces working code with no architectural documentation.
+
+### Where ANMA pays for itself
+
+The benchmark measures the first build. It does not measure what happens 3 months later when you need to add a feature.
+
+Without ANMA, the agent re-reads your entire codebase to understand what exists (Project 3: 58 Python files). With ANMA, the agent reads 12 contracts (~6,000 tokens) and knows every interface, dependency, and invariant.
+
+ANMA is not a tool for building faster on day one. It is a tool for building correctly across sessions, features, and team members.
 
 This repository includes 3 example modules with 14 interfaces so you can inspect the format immediately.
 
