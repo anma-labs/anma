@@ -17,6 +17,11 @@ try:
 except ImportError:
     discover_modules = None
 
+try:
+    from tokenizer import count_tokens
+except ImportError:
+    from tools.tokenizer import count_tokens
+
 # Implementation patterns (case-insensitive) — things that don't belong in contracts
 _IMPL_PATTERNS = [
     (r'\b(mysql|postgres(?:ql)?|sqlite|mongodb|dynamodb|redis|firestore|cloud ?sql)\b', 'database engine'),
@@ -40,9 +45,9 @@ _PASCAL_OK = {'MyAnimeList', 'AniList', 'OAuth', 'PostGIS', 'AppCheck', 'SendGri
     'CloudSQL', 'FireStore', 'StoRSI'}
 
 
-def _count_chars(filepath):
+def _count_file_tokens(filepath):
     try:
-        return len(filepath.read_text(encoding='utf-8'))
+        return count_tokens(filepath.read_text(encoding='utf-8'))
     except (OSError, UnicodeDecodeError):
         return 0
 
@@ -105,7 +110,7 @@ def check_p2_tokens_are_bottleneck(root, contracts, result, conventions=None, mo
         contract_path = mod_dir / 'CONTRACT.yaml'
         if not contract_path.exists():
             continue
-        tokens = _count_chars(contract_path) // 4
+        tokens = _count_file_tokens(contract_path)
         if tokens > max_tokens:
             result.warning(mod_name,
                 f"P2 contract is {tokens} tokens (max {max_tokens}). "
@@ -219,7 +224,7 @@ def check_p6_recovery_is_cheap(root, contracts, result, conventions=None, module
     print("── Principle 6: Recovery is cheap ──")
     for mod_name in contracts:
         module_dir = module_paths.get(mod_name, root / 'modules' / mod_name)
-        tokens = sum(_count_chars(module_dir / f) // 4
+        tokens = sum(_count_file_tokens(module_dir / f)
                      for f in ['CONTRACT.yaml', 'STATE.yaml', 'MEMORY.yaml'])
         if tokens > max_tokens:
             result.warning(mod_name,

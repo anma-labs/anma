@@ -21,6 +21,7 @@ from datetime import datetime, timezone, timedelta, date
 from pathlib import Path
 
 from discover import discover_modules, discover_domains
+from tokenizer import count_tokens
 
 _parse_cache = {}
 
@@ -1009,6 +1010,7 @@ def check_memory_files(root, contracts, conventions, result, module_paths=None):
         # Check total token budget (derived from max_entries * max_content_chars)
         max_total_chars = max_entries * max_content_chars
         total_chars = 0
+        total_content_parts = []
         for i, entry in enumerate(entries):
             if not isinstance(entry, dict):
                 result.error(mod_name, f"MEMORY.yaml entry {i} is not a mapping")
@@ -1030,6 +1032,7 @@ def check_memory_files(root, contracts, conventions, result, module_paths=None):
 
             content_str = str(content)
             total_chars += len(content_str)
+            total_content_parts.append(content_str)
 
             if len(content_str) > max_content_chars:
                 result.warning(mod_name,
@@ -1043,10 +1046,11 @@ def check_memory_files(root, contracts, conventions, result, module_paths=None):
 
         # Total budget check (derived from conventions)
         if total_chars > max_total_chars:
-            max_total_tokens = max_total_chars // 4
+            total_tokens = count_tokens('\n'.join(total_content_parts))
+            max_total_tokens = int(total_tokens * max_total_chars / total_chars)
             result.error(mod_name,
                 f"MEMORY.yaml total content is {total_chars} chars "
-                f"(~{total_chars // 4} tokens, max ~{max_total_tokens} tokens)")
+                f"(~{total_tokens} tokens, max ~{max_total_tokens} tokens)")
 
 
 # ---------------------------------------------------------------------------
@@ -1194,12 +1198,11 @@ def check_test_files(root, contracts, result, module_paths=None):
 # ---------------------------------------------------------------------------
 
 def _content_size(filepath):
-    """Return byte count of a YAML file excluding comments and blank lines.
-    More accurate than raw file size for token estimation."""
+    """Return estimated token count of a YAML file excluding comments and blank lines."""
     content = Path(filepath).read_text()
     lines = [l for l in content.split('\n')
              if l.strip() and not l.strip().startswith('#')]
-    return sum(len(l) + 1 for l in lines)  # +1 for newline
+    return count_tokens('\n'.join(lines))
 
 
 def check_context_budget(root, contracts, conventions, result, module_paths=None):
@@ -1229,19 +1232,17 @@ def check_context_budget(root, contracts, conventions, result, module_paths=None
         error_tokens += extra
 
     # Calculate shared context size (loaded by every agent)
-    shared_chars = 0
+    shared_tokens = 0
     for shared_file in ['CONVENTIONS.yaml', 'MANIFEST.yaml', 'GRAPH.yaml']:
         filepath = root / shared_file
         if filepath.exists():
             try:
-                shared_chars += _content_size(filepath)
+                shared_tokens += _content_size(filepath)
             except OSError:
                 pass
 
-    shared_tokens = shared_chars // 4
-
     for mod_name in contracts:
-        module_chars = 0
+        module_tokens = 0
         file_breakdown = {}
         mod_dir = module_paths.get(mod_name, root / 'modules' / mod_name)
 
@@ -1250,12 +1251,10 @@ def check_context_budget(root, contracts, conventions, result, module_paths=None
             if filepath.exists():
                 try:
                     size = _content_size(filepath)
-                    module_chars += size
-                    file_breakdown[mod_file] = size // 4
+                    module_tokens += size
+                    file_breakdown[mod_file] = size
                 except OSError:
                     pass
-
-        module_tokens = module_chars // 4
         total_tokens = shared_tokens + module_tokens
 
         if total_tokens > error_tokens:

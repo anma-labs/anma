@@ -21,6 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from lint_contracts import parse_yaml_file, load_all_contracts, load_conventions
 from discover import discover_modules
+from tokenizer import count_tokens
 
 
 def build_dashboard(root):
@@ -56,7 +57,7 @@ def build_dashboard(root):
             try:
                 lines = [l for l in path.read_text().split('\n')
                          if l.strip() and not l.strip().startswith('#')]
-                return sum(len(l) + 1 for l in lines)
+                return count_tokens('\n'.join(lines))
             except OSError:
                 return 0
 
@@ -70,7 +71,7 @@ def build_dashboard(root):
             for f in ['CONTRACT.yaml', 'STATE.yaml', 'MEMORY.yaml']
             if (mod_dir / f).exists()
         )
-        budget_tokens = (shared_size + mod_size) // 4
+        budget_tokens = shared_size + mod_size
 
         budget_conf = conv.get('context_budget', {}) if isinstance(conv, dict) else {}
         if not isinstance(budget_conf, dict):

@@ -58,7 +58,7 @@ def copy_scaffold(dest):
               'gen_product_spec.py', 'dashboard.py', 'plan_migration.py',
               'anma.py', 'gen_tests.py', 'impact.py', 'contract_diff.py',
               'discover.py', 'sync_all.py', 'import_contracts.py',
-              'init_project.py', 'smoke_test.py']:
+              'init_project.py', 'smoke_test.py', 'tokenizer.py']:
         src = TOOLS_DIR / f
         if src.exists():
             shutil.copy2(str(src), str(dest / f))

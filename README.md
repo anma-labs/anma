@@ -342,7 +342,7 @@ Install PyYAML:
 pip install pyyaml
 ```
 
-No other dependencies are required.
+Optional: `pip install tiktoken` for accurate token counting (falls back to estimate otherwise).
 
 ---
 

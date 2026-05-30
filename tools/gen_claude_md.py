@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from lint_contracts import parse_yaml_file
 from discover import discover_modules
+from tokenizer import count_tokens
 
 
 def generate_project_claude_md(root):
@@ -283,7 +284,7 @@ def main():
 
     output.write_text(content)
     print(f"Generated {output}")
-    print(f"  ({len(content)} chars, ~{len(content) // 4} tokens)")
+    print(f"  ({len(content)} chars, ~{count_tokens(content)} tokens)")
 
 
 if __name__ == '__main__':
