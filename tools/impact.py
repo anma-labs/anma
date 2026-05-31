@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 
-def find_project_root(start='.'):
+def find_project_root(start: str | Path = '.') -> Path:
     """Locate the nearest ancestor directory containing MANIFEST.yaml."""
     p = Path(start).resolve()
     if (p / 'MANIFEST.yaml').exists():
@@ -28,7 +28,7 @@ def find_project_root(start='.'):
     return Path(start).resolve()
 
 
-def build_consumer_map(root):
+def build_consumer_map(root: Path) -> dict[str, list[str]]:
     """Build {provider: [consumers]} from GRAPH.yaml."""
     graph_file = root / 'GRAPH.yaml'
     if not graph_file.exists():
@@ -48,7 +48,7 @@ def build_consumer_map(root):
     return consumer_map
 
 
-def find_impact(module, consumer_map, max_depth=None):
+def find_impact(module: str, consumer_map: dict[str, list[str]], max_depth: int | None = None) -> dict[int, list[str]]:
     """Find all modules affected by a change to `module`.
     Returns {depth: [modules_at_that_depth]}."""
     impact = {}
@@ -76,7 +76,7 @@ def find_impact(module, consumer_map, max_depth=None):
     return impact
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='ANMA Impact Analysis')
     parser.add_argument('module', help='Module to analyze')
     parser.add_argument('--depth', type=int, default=None,

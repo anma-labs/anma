@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 
 
-def analyze(root, label):
+def analyze(root: str | Path, label: str) -> dict[str, int]:
     """Compute architectural quality metrics for a project directory."""
     root = Path(root)
     metrics = {}
@@ -104,7 +104,7 @@ def analyze(root, label):
     return metrics
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 3:
         print(f"Usage: python3 {sys.argv[0]} /path/to/control /path/to/anma")
         sys.exit(1)

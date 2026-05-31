@@ -118,7 +118,7 @@ def _histogram(values: list, bucket_size: int = 100) -> list:
     return [{"range": k, "count": v} for k, v in sorted(buckets.items(), key=lambda x: int(x[0].split("-")[0]))]
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Measure token distributions across ANMA archetypes")
     parser.add_argument("--projects-dir", default="benchmark_projects",
                         help="Directory containing generated archetype projects")

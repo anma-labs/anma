@@ -3,7 +3,11 @@ Check that every CONTRACT.yaml pins conventions_version matching CONVENTIONS.yam
 Drop into checks/check_conventions_pin.py. The linter auto-discovers it.
 """
 
-def run(root, contracts, all_contracts, conventions, manifest, result, **kwargs):
+from pathlib import Path
+from typing import Any
+
+
+def run(root: Path, contracts: dict[str, dict], all_contracts: dict[str, dict], conventions: dict | None, manifest: dict | None, result: Any, **kwargs: Any) -> None:
     """Verify every CONTRACT.yaml pins conventions_version matching CONVENTIONS.yaml."""
     expected = conventions.get('conventions_version') if conventions else None
     if expected is None:

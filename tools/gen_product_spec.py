@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 
-def interface_to_story(mod_name, iface):
+def interface_to_story(mod_name: str, iface: dict) -> str:
     """Convert a single interface to a user story."""
     iface_id = iface.get('id', 'unknown')
     errors = iface.get('errors', [])
@@ -54,7 +54,7 @@ def interface_to_story(mod_name, iface):
     return '\n'.join(parts)
 
 
-def contract_to_spec(mod_name, contract):
+def contract_to_spec(mod_name: str, contract: dict) -> str:
     """Convert a full contract to a product spec."""
     purpose = contract.get('purpose', 'No purpose defined')
     provides = contract.get('provides', [])
@@ -86,7 +86,7 @@ def contract_to_spec(mod_name, contract):
     return '\n'.join(lines)
 
 
-def generate_full_spec(root, module_filter=None):
+def generate_full_spec(root: Path, module_filter: list[str] | None = None) -> str:
     """Generate the complete product spec."""
     from yaml_utils import parse_yaml_file, load_all_contracts
     contracts = load_all_contracts(root)
@@ -126,7 +126,7 @@ def generate_full_spec(root, module_filter=None):
     return '\n'.join(lines)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA Product Spec Generator')
     parser.add_argument('--module', action='append', default=None,

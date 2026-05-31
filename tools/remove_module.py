@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from yaml_utils import load_all_contracts, parse_yaml_file
 from discover import discover_modules
 
-def find_project_root(start='.'):
+def find_project_root(start: str | Path = '.') -> Path:
     """Locate the nearest ancestor directory containing MANIFEST.yaml."""
     p = Path(start).resolve()
     if (p / 'MANIFEST.yaml').exists(): return p
@@ -16,7 +16,7 @@ def find_project_root(start='.'):
         if (parent / 'MANIFEST.yaml').exists(): return parent
     return p
 
-def check_consumers(root, name, module_paths=None):
+def check_consumers(root: Path, name: str, module_paths: dict[str, Path] | None = None) -> list[str]:
     """Return list of modules that consume the given module."""
     contracts = load_all_contracts(root, module_paths=module_paths)
     consumers = []
@@ -29,7 +29,7 @@ def check_consumers(root, name, module_paths=None):
                     consumers.append(mod_name); break
     return consumers
 
-def clean_bus(root, name):
+def clean_bus(root: Path, name: str) -> int:
     """Remove BUS delta/request files that reference the given module."""
     bus_dir = root / 'BUS'; removed = 0
     if bus_dir.is_dir():
@@ -55,7 +55,7 @@ def clean_bus(root, name):
                         f.unlink(); removed += 1
     return removed
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='ANMA Remove Module')
     parser.add_argument('name', help='Module name to remove')
     parser.add_argument('--confirm', action='store_true', help='Required to confirm removal')

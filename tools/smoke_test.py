@@ -29,7 +29,7 @@ PROJECT_ROOT = TOOLS_DIR.parent
 VERBOSE = '-v' in sys.argv or '--verbose' in sys.argv
 
 
-def run(cmd, cwd, expect_exit=0, capture=True):
+def run(cmd: list[str], cwd: Path, expect_exit: int = 0, capture: bool = True) -> subprocess.CompletedProcess[str] | bool:
     """Run a command and verify exit code."""
     result = subprocess.run(
         cmd, cwd=str(cwd), capture_output=capture,
@@ -47,7 +47,7 @@ def run(cmd, cwd, expect_exit=0, capture=True):
     return result
 
 
-def copy_scaffold(dest):
+def copy_scaffold(dest: Path) -> None:
     """Copy scaffold infrastructure files (no modules) to dest."""
     # Copy scripts
     for f in ['lint_contracts.py', 'new_module.py', 'gen_claude_md.py',
@@ -102,11 +102,11 @@ def copy_scaffold(dest):
         "role: orchestrator\nreads: []\nresponsibilities: []\n")
 
 
-def main():
+def main() -> None:
     passed = 0
     failed = 0
 
-    def check(name, condition):
+    def check(name: str, condition: object) -> None:
         nonlocal passed, failed
         if condition:
             passed += 1

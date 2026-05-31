@@ -2033,7 +2033,7 @@ def _build_manifest(archetype: dict) -> str:
     return yaml.dump(manifest, default_flow_style=False, sort_keys=False, width=120)
 
 
-def generate_archetype(archetype: dict, output_dir: Path):
+def generate_archetype(archetype: dict, output_dir: Path) -> None:
     """Generate a full project directory for one archetype."""
     project_dir = output_dir / archetype["name"]
     project_dir.mkdir(parents=True, exist_ok=True)
@@ -2054,7 +2054,7 @@ def generate_archetype(archetype: dict, output_dir: Path):
     print(f"  ✓ {archetype['name']}: {len(archetype['modules'])} modules")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Generate ANMA benchmark archetypes")
     parser.add_argument("--output-dir", default="benchmark_projects",
                         help="Directory to write archetype projects")

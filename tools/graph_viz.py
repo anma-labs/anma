@@ -19,7 +19,7 @@ from yaml_utils import parse_yaml_file, load_all_contracts
 from discover import discover_modules
 
 
-def generate_mermaid(root):
+def generate_mermaid(root: Path) -> str:
     """Generate a Mermaid flowchart from GRAPH.yaml and CONTRACT metadata."""
     graph = parse_yaml_file(str(root / 'GRAPH.yaml')) or {}
     manifest = parse_yaml_file(str(root / 'MANIFEST.yaml')) or {}
@@ -106,7 +106,7 @@ def generate_mermaid(root):
     return '\n'.join(lines) + '\n'
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA Graph Visualization')
     parser.add_argument('--output', type=str, default=None,

@@ -19,7 +19,7 @@ from pathlib import Path
 MAX_HISTORY_ENTRIES = 50
 
 
-def log_activity(root, action, script_name):
+def log_activity(root: str | Path, action: str, script_name: str) -> None:
     """Append an activity entry to SESSION-HISTORY.yaml. Fails silently."""
     try:
         if os.environ.get('ANMA_NO_LOG'):

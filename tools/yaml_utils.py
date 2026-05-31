@@ -8,6 +8,7 @@ load_all_contracts, and load_conventions — shared across 19+ tool scripts.
 import sys
 from datetime import datetime, date
 from pathlib import Path
+from typing import Any
 
 from discover import discover_modules
 
@@ -28,7 +29,7 @@ except ImportError:
 _parse_cache = {}
 
 
-def _cached_parse(filepath):
+def _cached_parse(filepath: str | Path) -> dict | None:
     """parse_yaml_file with per-run caching. Safe for read-only lint passes."""
     filepath = str(filepath)
     if filepath not in _parse_cache:
@@ -36,7 +37,7 @@ def _cached_parse(filepath):
     return _parse_cache[filepath]
 
 
-def parse_yaml_file(filepath, strict=False):
+def parse_yaml_file(filepath: str | Path, strict: bool = False) -> dict | None:
     """Parse a YAML file into a Python dict.
 
     Uses PyYAML (yaml.safe_load) when available for full YAML support.
@@ -58,7 +59,7 @@ def parse_yaml_file(filepath, strict=False):
         return {'_parse_error': str(e)}
 
 
-def _parse_yaml_auto(text, source=None, strict=False):
+def _parse_yaml_auto(text: str, source: str | None = None, strict: bool = False) -> dict:
     """Parse YAML text, choosing the best available parser."""
     global _PYYAML_NOTICE_SHOWN
 
@@ -81,7 +82,7 @@ def _parse_yaml_auto(text, source=None, strict=False):
     return parse_yaml(text, strict=strict)
 
 
-def _normalize_types(obj):
+def _normalize_types(obj: dict | list) -> None:
     """Recursively convert PyYAML-specific types (datetime, date) to strings
     for consistency with the built-in parser."""
     if isinstance(obj, dict):
@@ -102,7 +103,7 @@ def _normalize_types(obj):
                 _normalize_types(v)
 
 
-def parse_yaml(text, strict=False):
+def parse_yaml(text: str, strict: bool = False) -> dict:
     """Built-in minimal YAML parser for ANMA contract files.
 
     Args:
@@ -123,11 +124,11 @@ def parse_yaml(text, strict=False):
     return result
 
 
-def _current_indent(line):
+def _current_indent(line: str) -> int:
     return len(line) - len(line.lstrip())
 
 
-def _strip_comment(line):
+def _strip_comment(line: str) -> str:
     """Remove inline comments, respecting quoted strings."""
     in_single = False
     in_double = False
@@ -141,7 +142,7 @@ def _strip_comment(line):
     return line.rstrip()
 
 
-def _parse_flow_value(val):
+def _parse_flow_value(val: str) -> Any:
     """Parse inline YAML values: flow mappings, flow lists, scalars."""
     val = val.strip()
     if not val or val == 'null' or val == 'Null' or val == 'NULL' or val == '~':
@@ -183,7 +184,7 @@ def _parse_flow_value(val):
     return val
 
 
-def _split_flow(text):
+def _split_flow(text: str) -> list[str]:
     """Split flow sequence/mapping items respecting nested braces/brackets."""
     items = []
     depth = 0
@@ -205,7 +206,7 @@ def _split_flow(text):
     return items
 
 
-def _parse_block(lines, idx, base_indent, warnings=None):
+def _parse_block(lines: list[str], idx: int, base_indent: int, warnings: list[str] | None = None) -> tuple[dict, int]:
     """Parse a YAML block into a dict, returning (result, next_index)."""
     result = {}
     while idx < len(lines):
@@ -278,7 +279,7 @@ def _parse_block(lines, idx, base_indent, warnings=None):
     return result, idx
 
 
-def _parse_list(lines, idx, base_indent, warnings=None):
+def _parse_list(lines: list[str], idx: int, base_indent: int, warnings: list[str] | None = None) -> tuple[list, int]:
     """Parse a YAML list, returning (list, next_index)."""
     result = []
     while idx < len(lines):
@@ -358,7 +359,7 @@ def _parse_list(lines, idx, base_indent, warnings=None):
 # High-level loaders used by multiple tools
 # ---------------------------------------------------------------------------
 
-def load_all_contracts(root, module_paths=None):
+def load_all_contracts(root: Path, module_paths: dict[str, Path] | None = None) -> dict[str, dict]:
     """Load all module CONTRACT.yaml files. Returns {module_name: contract_dict}.
     Includes empty/malformed contracts so structure checks can report them."""
     contracts = {}
@@ -380,6 +381,6 @@ def load_all_contracts(root, module_paths=None):
     return contracts
 
 
-def load_conventions(root):
+def load_conventions(root: Path) -> dict | None:
     """Load CONVENTIONS.yaml."""
     return parse_yaml_file(str(root / 'CONVENTIONS.yaml'))

@@ -30,7 +30,7 @@ from yaml_utils import parse_yaml_file, load_all_contracts
 from discover import discover_modules
 
 
-def _module_dir(root, module):
+def _module_dir(root: Path, module: str) -> Path:
     try:
         module_paths = discover_modules(root)
     except ValueError:
@@ -38,7 +38,7 @@ def _module_dir(root, module):
     return module_paths.get(module, root / 'modules' / module)
 
 
-def find_project_root(start='.'):
+def find_project_root(start: str = '.') -> Path:
     """Locate the nearest ancestor directory containing MANIFEST.yaml."""
     p = Path(start).resolve()
     if (p / 'MANIFEST.yaml').exists():
@@ -49,7 +49,7 @@ def find_project_root(start='.'):
     return Path(start).resolve()
 
 
-def snapshot(root, module):
+def snapshot(root: Path, module: str) -> None:
     """Save current CONTRACT.yaml for later diffing."""
     src = _module_dir(root, module) / 'CONTRACT.yaml'
     if not src.exists():
@@ -62,7 +62,7 @@ def snapshot(root, module):
     print(f"Snapshot saved: .anma-snapshots/{module}/CONTRACT.yaml")
 
 
-def diff_provides(old_provides, new_provides):
+def diff_provides(old_provides: list | None, new_provides: list | None) -> tuple[list[dict], list[dict], list[dict]]:
     """Compare provides sections. Returns (added, removed, modified) interfaces."""
     old_map = {}
     for iface in (old_provides or []):
@@ -94,9 +94,9 @@ def diff_provides(old_provides, new_provides):
     return added, removed, modified
 
 
-def diff_consumes(old_consumes, new_consumes):
+def diff_consumes(old_consumes: list | None, new_consumes: list | None) -> tuple[list[dict], list[dict]]:
     """Compare consumes sections. Returns (added, removed) dependencies."""
-    def consumes_key(entry):
+    def consumes_key(entry: dict) -> str:
         if isinstance(entry, dict):
             return f"{entry.get('module', '?')}.{entry.get('interface', '?')}"
         return str(entry)
@@ -112,7 +112,7 @@ def diff_consumes(old_consumes, new_consumes):
     return added, removed
 
 
-def format_interface_yaml(iface, indent=4):
+def format_interface_yaml(iface: dict, indent: int = 4) -> str:
     """Format an interface dict as YAML lines."""
     prefix = ' ' * indent
     lines = [f"{prefix}id: {iface.get('id', '?')}"]
@@ -135,7 +135,7 @@ def format_interface_yaml(iface, indent=4):
     return '\n'.join(lines)
 
 
-def generate_deltas(module, old_contract, new_contract, root):
+def generate_deltas(module: str, old_contract: dict, new_contract: dict, root: Path) -> tuple[dict | None, list[dict]]:
     """Generate BUS delta files and CHANGELOG entries."""
     old_version = old_contract.get('version', 0)
     new_version = new_contract.get('version', old_version)
@@ -318,7 +318,7 @@ def generate_deltas(module, old_contract, new_contract, root):
     return summary, deltas
 
 
-def write_deltas(root, module, summary, deltas, dry_run=False):
+def write_deltas(root: Path, module: str, summary: dict, deltas: list[dict], dry_run: bool = False) -> None:
     """Write BUS delta files and update CHANGELOG."""
     if dry_run:
         print(f"\nDry run — would generate {len(deltas)} delta(s):\n")
@@ -385,7 +385,7 @@ def write_deltas(root, module, summary, deltas, dry_run=False):
         print(f"  Updated modules/{module}/CHANGELOG.yaml")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA Contract Diff — detect changes and generate BUS deltas')
     parser.add_argument('module', help='Module name')

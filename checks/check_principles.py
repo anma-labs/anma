@@ -2,9 +2,12 @@
 ANMA Principle Enforcement — 7 checks mapping to 7 design principles.
 Drop into checks/check_principles.py. The linter auto-discovers it.
 """
+from __future__ import annotations
+
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 DEFAULT_CONTRACT_MAX_TOKENS = 500
 DEFAULT_RECOVERY_MAX_TOKENS = 800
@@ -50,14 +53,14 @@ _PASCAL_OK = {'MyAnimeList', 'AniList', 'OAuth', 'PostGIS', 'AppCheck', 'SendGri
     'CloudSQL', 'FireStore', 'StoRSI'}
 
 
-def _count_file_tokens(filepath):
+def _count_file_tokens(filepath: Path) -> int:
     try:
         return count_tokens(filepath.read_text(encoding='utf-8'))
     except (OSError, UnicodeDecodeError):
         return 0
 
 
-def check_p1_contracts_over_code(root, contracts, result, module_paths=None):
+def check_p1_contracts_over_code(root: Path, contracts: dict[str, dict[str, Any]], result: Any, module_paths: dict[str, Path] | None = None) -> None:
     """P1: Contracts describe behavior, never implementation."""
     print("── Principle 1: Contracts over code ──")
     if module_paths is None:
@@ -102,7 +105,7 @@ def check_p1_contracts_over_code(root, contracts, result, module_paths=None):
                     f"contracts describe WHAT, not HOW")
 
 
-def check_p2_tokens_are_bottleneck(root, contracts, result, conventions=None, module_paths=None):
+def check_p2_tokens_are_bottleneck(root: Path, contracts: dict[str, dict[str, Any]], result: Any, conventions: dict[str, Any] | None = None, module_paths: dict[str, Path] | None = None) -> None:
     """P2: Single contract within token_thresholds.contract_max."""
     max_tokens = DEFAULT_CONTRACT_MAX_TOKENS
     if conventions:
@@ -122,7 +125,7 @@ def check_p2_tokens_are_bottleneck(root, contracts, result, conventions=None, mo
                 f"Consider splitting or compressing invariants")
 
 
-def check_p3_state_is_explicit(root, contracts, result, module_paths=None):
+def check_p3_state_is_explicit(root: Path, contracts: dict[str, dict[str, Any]], result: Any, module_paths: dict[str, Path] | None = None) -> None:
     """P3: Non-draft STATE.yaml must reflect actual work."""
     print("── Principle 3: State is explicit ──")
     if module_paths is None:
@@ -149,7 +152,7 @@ def check_p3_state_is_explicit(root, contracts, result, module_paths=None):
                 break
 
 
-def check_p4_communication_is_async(root, contracts, all_contracts, result):
+def check_p4_communication_is_async(root: Path, contracts: dict[str, dict[str, Any]], all_contracts: dict[str, dict[str, Any]], result: Any) -> None:
     """P4: Cross-module deps should have BUS events."""
     print("── Principle 4: Communication is async ──")
     bus_dir = root / 'BUS'
@@ -195,7 +198,7 @@ def check_p4_communication_is_async(root, contracts, all_contracts, result):
                 f"P4 consumes [{', '.join(consumed)}] but no BUS events detected")
 
 
-def check_p5_hierarchy_is_real(root, contracts, manifest, result):
+def check_p5_hierarchy_is_real(root: Path, contracts: dict[str, dict[str, Any]], manifest: dict[str, Any] | None, result: Any) -> None:
     """P5: Every module has a manager, max 7 per manager."""
     print("── Principle 5: Hierarchy is real ──")
     if not manifest or not isinstance(manifest, dict):
@@ -219,7 +222,7 @@ def check_p5_hierarchy_is_real(root, contracts, manifest, result):
                 f"P5 owns {len(modules)} modules (max {MAX_MODULES_PER_MANAGER}): {', '.join(modules)}")
 
 
-def check_p6_recovery_is_cheap(root, contracts, result, conventions=None, module_paths=None):
+def check_p6_recovery_is_cheap(root: Path, contracts: dict[str, dict[str, Any]], result: Any, conventions: dict[str, Any] | None = None, module_paths: dict[str, Path] | None = None) -> None:
     """P6: Module recovery (CONTRACT+STATE+MEMORY) within token_thresholds.recovery_max."""
     max_tokens = DEFAULT_RECOVERY_MAX_TOKENS
     if conventions:
@@ -236,7 +239,7 @@ def check_p6_recovery_is_cheap(root, contracts, result, conventions=None, module
                 f"P6 module recovery is {tokens} tokens (max {max_tokens})")
 
 
-def check_p7_replacement_over_continuity(root, contracts, result, module_paths=None):
+def check_p7_replacement_over_continuity(root: Path, contracts: dict[str, dict[str, Any]], result: Any, module_paths: dict[str, Path] | None = None) -> None:
     """P7: MEMORY.yaml is structured insights, not logs or code."""
     print("── Principle 7: Replacement over continuity ──")
     if module_paths is None:
@@ -261,7 +264,7 @@ def check_p7_replacement_over_continuity(root, contracts, result, module_paths=N
                 break
 
 
-def run(root, contracts, all_contracts, conventions, manifest, result, **kwargs):
+def run(root: Path, contracts: dict[str, dict[str, Any]], all_contracts: dict[str, dict[str, Any]], conventions: dict[str, Any] | None, manifest: dict[str, Any] | None, result: Any, **kwargs: Any) -> None:
     """Plugin entry point."""
     module_paths = kwargs.get('module_paths')
     if module_paths is None and discover_modules is not None:

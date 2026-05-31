@@ -21,7 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 
-def generate_graph(root, contracts=None):
+def generate_graph(root: Path, contracts: dict | None = None) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
     """Build graph data from all CONTRACT consumes fields."""
     if contracts is None:
         from yaml_utils import load_all_contracts
@@ -57,7 +57,7 @@ def generate_graph(root, contracts=None):
     return consumes_map, consumed_by
 
 
-def format_graph_yaml(consumes_map, consumed_by):
+def format_graph_yaml(consumes_map: dict[str, list[str]], consumed_by: dict[str, list[str]]) -> str:
     """Format graph data as YAML string."""
     now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
@@ -82,7 +82,7 @@ def format_graph_yaml(consumes_map, consumed_by):
     return '\n'.join(lines) + '\n'
 
 
-def parse_graph_modules(graph_text):
+def parse_graph_modules(graph_text: str) -> dict[str, dict[str, str]]:
     """Extract module data from graph YAML for comparison (ignoring timestamps)."""
     data = {}
     current_mod = None
@@ -97,7 +97,7 @@ def parse_graph_modules(graph_text):
     return data
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA Graph Generator')
     parser.add_argument('--dry-run', action='store_true',

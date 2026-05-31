@@ -21,7 +21,7 @@ from discover import discover_modules
 from tokenizer import count_tokens
 
 
-def generate_project_claude_md(root):
+def generate_project_claude_md(root: Path) -> str:
     """Generate a project-level CLAUDE.md."""
     conv = parse_yaml_file(str(root / 'CONVENTIONS.yaml')) or {}
     manifest = parse_yaml_file(str(root / 'MANIFEST.yaml')) or {}
@@ -139,7 +139,7 @@ def generate_project_claude_md(root):
     return '\n'.join(lines) + '\n'
 
 
-def generate_module_claude_md(root, module_name, module_paths=None):
+def generate_module_claude_md(root: Path, module_name: str, module_paths: dict[str, Path] | None = None) -> str:
     """Generate a module-level CLAUDE.md for a specific agent."""
     graph = parse_yaml_file(str(root / 'GRAPH.yaml')) or {}
     if module_paths is None:
@@ -244,7 +244,7 @@ def generate_module_claude_md(root, module_name, module_paths=None):
     return '\n'.join(lines) + '\n'
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA CLAUDE.md Generator')
     parser.add_argument('--module', type=str, default=None,

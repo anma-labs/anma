@@ -3,7 +3,7 @@
 _encoder = None
 _use_tiktoken = None
 
-def count_tokens(text):
+def count_tokens(text: str) -> int:
     """Estimate token count for a text string."""
     global _encoder, _use_tiktoken
     if _use_tiktoken is None:

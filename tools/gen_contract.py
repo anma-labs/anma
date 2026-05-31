@@ -149,7 +149,7 @@ DEFAULT_PATTERN = {
 }
 
 
-def detect_pattern(name, purpose):
+def detect_pattern(name: str, purpose: str) -> tuple[str, dict]:
     """Detect which pattern(s) best match the module."""
     text = f"{name} {purpose}".lower()
     for pattern_name, pattern in PATTERNS.items():
@@ -159,7 +159,7 @@ def detect_pattern(name, purpose):
     return 'default', DEFAULT_PATTERN
 
 
-def derive_entity(name):
+def derive_entity(name: str) -> str:
     """Derive the entity name from the module name."""
     # user-store → user, auth-service → auth, payment-handler → payment
     parts = name.split('-')
@@ -168,7 +168,7 @@ def derive_entity(name):
     return '_'.join(entity_parts) if entity_parts else parts[0]
 
 
-def generate_contract(name, purpose, consumes, mod_type, root=None, force_pattern=None):
+def generate_contract(name: str, purpose: str, consumes: list[str], mod_type: str, root: Path | None = None, force_pattern: str | None = None) -> tuple[str, str]:
     """Generate CONTRACT.yaml content."""
     entity = derive_entity(name)
     entity_upper = entity.upper().replace('-', '_')
@@ -254,7 +254,7 @@ def generate_contract(name, purpose, consumes, mod_type, root=None, force_patter
     return '\n'.join(lines) + '\n', pattern_name
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA Contract Template Generator')
     parser.add_argument('name', nargs='?', help='Module name (kebab-case)')

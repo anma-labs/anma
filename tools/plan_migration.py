@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from yaml_utils import parse_yaml_file, load_all_contracts
 
 
-def find_all_consumers(module, graph_modules, depth=0, seen=None):
+def find_all_consumers(module: str, graph_modules: dict, depth: int = 0, seen: set | None = None) -> list[dict]:
     """Find all direct and transitive consumers using iterative BFS."""
     if seen is None:
         seen = set()
@@ -55,12 +55,12 @@ def find_all_consumers(module, graph_modules, depth=0, seen=None):
     return consumers
 
 
-def compute_update_order(consumers):
+def compute_update_order(consumers: list[dict]) -> list[dict]:
     """Sort consumers: deepest first (leaf consumers update before intermediaries)."""
     return sorted(consumers, key=lambda c: -c['depth'])
 
 
-def build_migration_plan(root, module_name, target_version):
+def build_migration_plan(root: Path, module_name: str, target_version: int) -> tuple[dict | None, str | None]:
     """Build a complete migration plan."""
     contracts = load_all_contracts(root)
     graph = parse_yaml_file(str(root / 'GRAPH.yaml')) or {}
@@ -135,7 +135,7 @@ def build_migration_plan(root, module_name, target_version):
     return plan, None
 
 
-def format_plan(plan):
+def format_plan(plan: dict) -> str:
     """Format migration plan as human-readable text."""
     lines = [
         f"# Migration Plan: {plan['provider']} v{plan['current_version']} → v{plan['target_version']}",
@@ -197,7 +197,7 @@ def format_plan(plan):
     return '\n'.join(lines) + '\n'
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA Contract Migration Planner')
     parser.add_argument('module', help='Module being changed')

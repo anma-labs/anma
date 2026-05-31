@@ -25,13 +25,13 @@ MIN_MANIFEST_COL_WIDTH = 19
 # MANIFEST.yaml
 # ---------------------------------------------------------------------------
 
-def read_manifest(root):
+def read_manifest(root: str | Path) -> dict:
     """Read and parse MANIFEST.yaml."""
     path = Path(root) / 'MANIFEST.yaml'
     return parse_yaml_file(str(path)) or {}
 
 
-def write_manifest(root, data):
+def write_manifest(root: str | Path, data: dict) -> None:
     """Write MANIFEST.yaml in ANMA format."""
     path = Path(root) / 'MANIFEST.yaml'
 
@@ -86,7 +86,7 @@ def write_manifest(root, data):
     path.write_text('\n'.join(lines))
 
 
-def manifest_add_module(root, name, status='draft', owner=None, manager=None, domain=None):
+def manifest_add_module(root: str | Path, name: str, status: str = 'draft', owner: str | None = None, manager: str | None = None, domain: str | None = None) -> tuple[bool, str | None]:
     """Add a module to MANIFEST.yaml."""
     data = read_manifest(root)
     modules = data.get('modules', {})
@@ -121,7 +121,7 @@ def manifest_add_module(root, name, status='draft', owner=None, manager=None, do
     return True, None
 
 
-def manifest_remove_module(root, name):
+def manifest_remove_module(root: str | Path, name: str) -> None:
     """Remove a module from MANIFEST.yaml and any manager owns lists."""
     data = read_manifest(root)
     modules = data.get('modules', {})
@@ -142,7 +142,7 @@ def manifest_remove_module(root, name):
     write_manifest(root, data)
 
 
-def manifest_add_manager(root, name, owns=None):
+def manifest_add_manager(root: str | Path, name: str, owns: list[str] | None = None) -> tuple[bool, str | None]:
     """Add a manager to MANIFEST.yaml."""
     data = read_manifest(root)
     managers = data.get('managers', {})
@@ -168,7 +168,7 @@ def manifest_add_manager(root, name, owns=None):
     return True, None
 
 
-def manifest_rename_project(root, new_name):
+def manifest_rename_project(root: str | Path, new_name: str) -> str:
     """Rename the project in MANIFEST.yaml."""
     data = read_manifest(root)
     old_name = data.get('project', '')
@@ -182,13 +182,13 @@ def manifest_rename_project(root, new_name):
 # GRAPH.yaml
 # ---------------------------------------------------------------------------
 
-def read_graph(root):
+def read_graph(root: str | Path) -> dict:
     """Read and parse GRAPH.yaml."""
     path = Path(root) / 'GRAPH.yaml'
     return parse_yaml_file(str(path)) or {}
 
 
-def write_graph(root, data):
+def write_graph(root: str | Path, data: dict) -> None:
     """Write GRAPH.yaml in ANMA format."""
     path = Path(root) / 'GRAPH.yaml'
 
@@ -223,7 +223,7 @@ def write_graph(root, data):
     path.write_text('\n'.join(lines))
 
 
-def graph_add_module(root, name, consumes=None):
+def graph_add_module(root: str | Path, name: str, consumes: list[str] | None = None) -> None:
     """Add a module to GRAPH.yaml and update consumed_by for dependencies."""
     data = read_graph(root)
     modules = data.get('modules', {})
@@ -246,7 +246,7 @@ def graph_add_module(root, name, consumes=None):
     write_graph(root, data)
 
 
-def graph_remove_module(root, name):
+def graph_remove_module(root: str | Path, name: str) -> None:
     """Remove a module from GRAPH.yaml and all consumed_by references."""
     data = read_graph(root)
     modules = data.get('modules', {})
@@ -275,7 +275,7 @@ def graph_remove_module(root, name):
 # SCOPE.yaml (per-manager)
 # ---------------------------------------------------------------------------
 
-def scope_add_module(root, manager, module_name):
+def scope_add_module(root: str | Path, manager: str, module_name: str) -> bool:
     """Add a module to a manager's SCOPE.yaml owns list."""
     path = Path(root) / 'managers' / manager / 'SCOPE.yaml'
     if not path.exists():
@@ -312,7 +312,7 @@ def scope_add_module(root, manager, module_name):
     return True
 
 
-def scope_remove_module(root, manager, module_name):
+def scope_remove_module(root: str | Path, manager: str, module_name: str) -> bool:
     """Remove a module from a manager's SCOPE.yaml owns list."""
     path = Path(root) / 'managers' / manager / 'SCOPE.yaml'
     if not path.exists():
@@ -341,5 +341,5 @@ def scope_remove_module(root, manager, module_name):
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _now():
+def _now() -> str:
     return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')

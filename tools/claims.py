@@ -15,7 +15,7 @@ CLAIMS_DIR = '.anma'
 CLAIMS_FILE = '.anma/claims.yaml'
 
 
-def _get_git_branch():
+def _get_git_branch() -> str:
     try:
         import subprocess
         result = subprocess.run(
@@ -26,7 +26,7 @@ def _get_git_branch():
         return 'unknown'
 
 
-def _load_claims(root):
+def _load_claims(root: str | Path) -> dict:
     path = Path(root) / CLAIMS_FILE
     if not path.exists():
         return {}
@@ -36,7 +36,7 @@ def _load_claims(root):
     return data.get('claims', {}) or {}
 
 
-def _save_claims(root, claims):
+def _save_claims(root: str | Path, claims: dict) -> None:
     root = Path(root)
     path = root / CLAIMS_FILE
     (root / CLAIMS_DIR).mkdir(exist_ok=True)
@@ -46,7 +46,7 @@ def _save_claims(root, claims):
     path.write_text(header + body)
 
 
-def add_claim(root, module, by=None, branch=None):
+def add_claim(root: str | Path, module: str, by: str | None = None, branch: str | None = None) -> tuple[bool, str]:
     """Add a claim. Returns (success, message)."""
     claims = _load_claims(root)
     if by is None:
@@ -66,13 +66,13 @@ def add_claim(root, module, by=None, branch=None):
     return True, f"Claimed '{module}' for {by}"
 
 
-def get_claim(root, module):
+def get_claim(root: str | Path, module: str) -> dict | None:
     """Get claim info for a module. Returns dict or None."""
     claims = _load_claims(root)
     return claims.get(module)
 
 
-def release_claim(root, module):
+def release_claim(root: str | Path, module: str) -> tuple[bool, str]:
     """Release a claim. Returns (success, message)."""
     claims = _load_claims(root)
     if module not in claims:
@@ -82,7 +82,7 @@ def release_claim(root, module):
     return True, f"Released '{module}'"
 
 
-def print_status(root):
+def print_status(root: str | Path) -> None:
     """Print claims table."""
     claims = _load_claims(root)
     if not claims:
@@ -96,7 +96,7 @@ def print_status(root):
     print()
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='ANMA Module Claims')
     parser.add_argument('--path', default='.', help='Project root')
     sub = parser.add_subparsers(dest='command')

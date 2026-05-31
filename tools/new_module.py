@@ -26,11 +26,11 @@ from discover import discover_modules
 # YAML writing helpers (minimal, no external deps)
 # ---------------------------------------------------------------------------
 
-def timestamp_now():
+def timestamp_now() -> str:
     return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
-def write_contract(path, name, mod_type, purpose, consumes):
+def write_contract(path: Path, name: str, mod_type: str, purpose: str, consumes: list[str]) -> None:
     lines = [
         f"module: {name}",
         "version: 1",
@@ -74,7 +74,7 @@ def write_contract(path, name, mod_type, purpose, consumes):
     path.write_text('\n'.join(lines) + '\n')
 
 
-def write_state(path, name):
+def write_state(path: Path, name: str) -> None:
     path.write_text('\n'.join([
         f"module: {name}",
         "status: green",
@@ -86,14 +86,14 @@ def write_state(path, name):
     ]) + '\n')
 
 
-def write_memory(path, name):
+def write_memory(path: Path, name: str) -> None:
     path.write_text('\n'.join([
         f"module: {name}",
         "entries: []",
     ]) + '\n')
 
 
-def write_changelog(path, name):
+def write_changelog(path: Path, name: str) -> None:
     path.write_text('\n'.join([
         "# Structured diffs against CONTRACT.yaml.",
         f"module: {name}",
@@ -101,7 +101,7 @@ def write_changelog(path, name):
     ]) + '\n')
 
 
-def write_tests(path, name):
+def write_tests(path: Path, name: str) -> None:
     path.write_text('\n'.join([
         "# Black-box contract tests.",
         f"module: {name}",
@@ -130,7 +130,7 @@ def write_tests(path, name):
     ]) + '\n')
 
 
-def write_assumptions(path, name):
+def write_assumptions(path: Path, name: str) -> None:
     path.write_text('\n'.join([
         "# Implementation assumptions not captured in CONTRACT.",
         f"module: {name}",
@@ -146,7 +146,7 @@ def write_assumptions(path, name):
 # MANIFEST and GRAPH updaters
 # ---------------------------------------------------------------------------
 
-def update_manifest(root, name, manager, domain=None):
+def update_manifest(root: Path, name: str, manager: str | None, domain: str | None = None) -> None:
     """Append new module to MANIFEST.yaml using yaml_editor."""
     from yaml_editor import manifest_add_module, scope_add_module
 
@@ -166,7 +166,7 @@ def update_manifest(root, name, manager, domain=None):
             print(f"  Updated managers/{manager}/SCOPE.yaml")
 
 
-def update_graph(root, name, consumes):
+def update_graph(root: Path, name: str, consumes: list[str]) -> None:
     """Append new module to GRAPH.yaml and update consumed_by using yaml_editor."""
     from yaml_editor import graph_add_module, read_graph
 
@@ -189,7 +189,7 @@ def update_graph(root, name, consumes):
 # Main
 # ---------------------------------------------------------------------------
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA New Module Scaffolding Script')
     parser.add_argument('name', help='Module name (kebab-case)')

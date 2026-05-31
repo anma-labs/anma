@@ -24,7 +24,7 @@ from discover import discover_modules
 from tokenizer import count_tokens
 
 
-def build_dashboard(root):
+def build_dashboard(root: Path) -> dict:
     """Collect all health metrics."""
     contracts = load_all_contracts(root)
     try:
@@ -53,7 +53,7 @@ def build_dashboard(root):
             state = {}
 
         # Context budget (content-only, excluding comments and blank lines)
-        def _yaml_content_size(path):
+        def _yaml_content_size(path: Path) -> int:
             try:
                 lines = [l for l in path.read_text().split('\n')
                          if l.strip() and not l.strip().startswith('#')]
@@ -249,7 +249,7 @@ def build_dashboard(root):
     }
 
 
-def format_dashboard(data):
+def format_dashboard(data: dict) -> str:
     """Format as a compact one-screen dashboard."""
     lines = [
         f"╔══════════════════════════════════════════════════╗",
@@ -338,7 +338,7 @@ def format_dashboard(data):
     return '\n'.join(lines) + '\n'
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA Health Dashboard')
     parser.add_argument('--json', action='store_true',

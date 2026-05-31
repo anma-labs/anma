@@ -30,7 +30,7 @@ REQUIRED_FILES = ['CONTRACT.yaml', 'STATE.yaml', 'MEMORY.yaml',
 SYNC_STATE_FILE = '.anma/sync-state.yaml'
 
 
-def _sha256_file(path):
+def _sha256_file(path: str | Path) -> str:
     """Return hex sha256 of a file, or empty string if it doesn't exist."""
     import hashlib
     try:
@@ -39,7 +39,7 @@ def _sha256_file(path):
         return ''
 
 
-def _load_sync_state(root):
+def _load_sync_state(root: str | Path) -> dict:
     """Load .anma/sync-state.yaml. Returns dict with tool_hash and contracts."""
     path = Path(root) / SYNC_STATE_FILE
     data = parse_yaml_file(str(path))
@@ -48,7 +48,7 @@ def _load_sync_state(root):
     return data
 
 
-def _save_sync_state(root, tool_hash, contract_hashes):
+def _save_sync_state(root: str | Path, tool_hash: str, contract_hashes: dict[str, str]) -> None:
     """Write .anma/sync-state.yaml."""
     root = Path(root)
     (root / '.anma').mkdir(exist_ok=True)
@@ -65,12 +65,12 @@ def _save_sync_state(root, tool_hash, contract_hashes):
     (root / SYNC_STATE_FILE).write_text(''.join(lines))
 
 
-def timestamp_now():
+def timestamp_now() -> str:
     """Return current UTC time as ISO 8601 string."""
     return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
-def ensure_stub(filepath, module_name):
+def ensure_stub(filepath: Path, module_name: str) -> None:
     """Create a missing module file using the same format as new_module.py."""
     name = filepath.name
     if name == 'STATE.yaml':
@@ -106,7 +106,7 @@ def ensure_stub(filepath, module_name):
         )
 
 
-def sync_all(root, regenerate_only=False, force=False):
+def sync_all(root: str | Path, regenerate_only: bool = False, force: bool = False) -> None:
     """Regenerate tests, graph, manifest stubs and keep all module files in sync."""
     root = Path(root).resolve()
     created = []
@@ -356,7 +356,7 @@ def sync_all(root, regenerate_only=False, force=False):
           f"{len(deleted)} deleted")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='Sync all ANMA project files')
     parser.add_argument('--path', default='.', help='Project root path')
     parser.add_argument('--regenerate-only', action='store_true',

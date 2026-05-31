@@ -29,7 +29,7 @@ passed = 0
 failed = 0
 
 
-def check(name, condition, detail=""):
+def check(name: str, condition: bool, detail: str = "") -> None:
     """Assert a test condition and track pass/fail counts."""
     global passed, failed
     if condition:
@@ -40,14 +40,14 @@ def check(name, condition, detail=""):
         failed += 1
 
 
-def timed(cmd, cwd):
+def timed(cmd: list[str], cwd: str | Path) -> tuple[float, int, str]:
     """Run a subprocess and return (elapsed_seconds, returncode, stdout)."""
     start = time.perf_counter()
     r = subprocess.run(cmd, capture_output=True, text=True, cwd=str(cwd))
     return time.perf_counter() - start, r.returncode, r.stdout
 
 
-def create_project(root, nm, nd):
+def create_project(root: str | Path, nm: int, nd: int) -> list[str]:
     """Scaffold a benchmark project with nm modules across nd domains."""
     root = Path(root)
     shutil.copy2(str(PROJECT_ROOT / 'CONVENTIONS.yaml'), str(root / 'CONVENTIONS.yaml'))
@@ -130,7 +130,7 @@ def create_project(root, nm, nd):
     return all_mods
 
 
-def run_benchmark(sizes):
+def run_benchmark(sizes: list[int]) -> None:
     global passed, failed
     passed = 0
     failed = 0
@@ -289,7 +289,7 @@ def run_benchmark(sizes):
     print("=" * 78)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='ANMA Full Feature Benchmark')
     parser.add_argument('--sizes', default='10,50,100,200',
                         help='Comma-separated module counts (default: 10,50,100,200)')

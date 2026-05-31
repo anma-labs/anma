@@ -28,7 +28,7 @@ TOOLS_DIR = Path(__file__).parent
 KEBAB_RE = re.compile(r'^[a-z][a-z0-9]*(-[a-z0-9]+)*$')
 
 
-def extract_module_name(filepath):
+def extract_module_name(filepath: Path) -> str | None:
     """Extract module name from filename or YAML content.
 
     Naming convention: <module-name>-CONTRACT.yaml
@@ -49,7 +49,7 @@ def extract_module_name(filepath):
     return None
 
 
-def import_contract(filepath, root, force=False, existing_paths=None, domain=None):
+def import_contract(filepath: str | Path, root: Path, force: bool = False, existing_paths: dict[str, Path] | None = None, domain: str | None = None) -> bool:
     """Import a single contract file into the project."""
     filepath = Path(filepath)
     if not filepath.exists():
@@ -99,7 +99,7 @@ def import_contract(filepath, root, force=False, existing_paths=None, domain=Non
     return True
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Import CONTRACT.yaml files into ANMA project")
     parser.add_argument("contracts", nargs="+",

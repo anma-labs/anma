@@ -17,12 +17,13 @@ import shutil
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent))
 from yaml_utils import parse_yaml_file
 
 
-def parse_iso_date(date_str):
+def parse_iso_date(date_str: Any) -> datetime | None:
     """Parse ISO 8601 date string to datetime. Returns None on failure."""
     if not date_str or not isinstance(date_str, str):
         return None
@@ -35,7 +36,7 @@ def parse_iso_date(date_str):
         return None
 
 
-def archive_requests(root, dry_run=False):
+def archive_requests(root: Path, dry_run: bool = False) -> list[tuple[str, str]]:
     """Archive resolved/rejected requests."""
     requests_dir = root / 'BUS' / 'requests'
     archive_dir = root / 'BUS' / 'archive' / 'requests'
@@ -62,7 +63,7 @@ def archive_requests(root, dry_run=False):
     return archived
 
 
-def archive_deltas(root, max_age_days, dry_run=False):
+def archive_deltas(root: Path, max_age_days: int, dry_run: bool = False) -> list[tuple[str, str]]:
     """Archive deltas older than max_age_days."""
     deltas_dir = root / 'BUS' / 'deltas'
     archive_dir = root / 'BUS' / 'archive' / 'deltas'
@@ -93,7 +94,7 @@ def archive_deltas(root, max_age_days, dry_run=False):
     return archived
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA BUS Lifecycle Manager')
     parser.add_argument('--max-age', type=int, default=30,

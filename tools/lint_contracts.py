@@ -12,6 +12,8 @@ Exit codes:
     2 = warnings found (only with --strict)
 """
 
+from __future__ import annotations
+
 import sys
 import re
 import argparse
@@ -41,16 +43,16 @@ class LintResult:
         self.errors = []
         self.warnings = []
 
-    def error(self, module, message):
+    def error(self, module: str, message: str) -> None:
         self.errors.append(f"ERROR [{module}]: {message}")
 
-    def warning(self, module, message):
+    def warning(self, module: str, message: str) -> None:
         self.warnings.append(f"WARN  [{module}]: {message}")
 
-    def ok(self):
+    def ok(self) -> bool:
         return len(self.errors) == 0
 
-    def print_report(self):
+    def print_report(self) -> None:
         for e in self.errors:
             print(f"  ✗ {e}")
             suggestion = _suggest_fix(e)
@@ -127,7 +129,7 @@ _SUGGESTIONS = [
 ]
 
 
-def _suggest_fix(message):
+def _suggest_fix(message: str) -> str | None:
     """Return a fix suggestion for a lint message, or None."""
     for pattern, suggestion in _SUGGESTIONS:
         if pattern in message:
@@ -135,7 +137,7 @@ def _suggest_fix(message):
     return None
 
 
-def find_project_root(start_path='.'):
+def find_project_root(start_path: str | Path = '.') -> Path:
     """Find project root by looking for MANIFEST.yaml."""
     p = Path(start_path).resolve()
     if (p / 'MANIFEST.yaml').exists():
@@ -146,12 +148,12 @@ def find_project_root(start_path='.'):
     return Path(start_path).resolve()
 
 
-def load_graph(root):
+def load_graph(root: Path) -> dict | None:
     """Load GRAPH.yaml."""
     return parse_yaml_file(str(root / 'GRAPH.yaml'))
 
 
-def load_manifest(root):
+def load_manifest(root: Path) -> dict | None:
     """Load MANIFEST.yaml."""
     return parse_yaml_file(str(root / 'MANIFEST.yaml'))
 
@@ -161,7 +163,7 @@ def load_manifest(root):
 # Every consumes entry must point to a real provides entry in target module.
 # ---------------------------------------------------------------------------
 
-def check_cross_references(contracts, all_contracts, result):
+def check_cross_references(contracts: dict[str, dict], all_contracts: dict[str, dict], result: LintResult) -> None:
     """Verify every consumes entry resolves to a real provides entry."""
     print("── Check 1: Contract cross-references ──")
 
@@ -211,7 +213,7 @@ def check_cross_references(contracts, all_contracts, result):
 # Check 2: GRAPH.yaml matches actual contracts
 # ---------------------------------------------------------------------------
 
-def check_graph_consistency(contracts, all_contracts, graph, result):
+def check_graph_consistency(contracts: dict[str, dict], all_contracts: dict[str, dict], graph: dict | None, result: LintResult) -> None:
     """Verify GRAPH.yaml matches the consumes/consumed_by in actual contracts."""
     print("── Check 2: GRAPH.yaml consistency ──")
 
@@ -294,7 +296,7 @@ def check_graph_consistency(contracts, all_contracts, graph, result):
 # Check 3: Naming conventions
 # ---------------------------------------------------------------------------
 
-def check_naming_conventions(contracts, conventions, result):
+def check_naming_conventions(contracts: dict[str, dict], conventions: dict | None, result: LintResult) -> None:
     """Verify all names follow CONVENTIONS.yaml rules."""
     print("── Check 3: Naming conventions ──")
 
@@ -346,7 +348,7 @@ def check_naming_conventions(contracts, conventions, result):
 # Check 4: Circular hard dependencies
 # ---------------------------------------------------------------------------
 
-def check_circular_dependencies(contracts, result):
+def check_circular_dependencies(contracts: dict[str, dict], result: LintResult) -> None:
     """Detect circular chains of required (hard) dependencies."""
     print("── Check 4: Circular dependency detection ──")
 
@@ -371,7 +373,7 @@ def check_circular_dependencies(contracts, result):
     path = []
     cycles = []
 
-    def dfs(node):
+    def dfs(node: str) -> None:
         if node not in color:
             return
         color[node] = GRAY
@@ -413,7 +415,7 @@ def check_circular_dependencies(contracts, result):
         color2 = {m: WHITE for m in all_deps}
         path2 = []
 
-        def dfs2(node):
+        def dfs2(node: str) -> None:
             if node not in color2:
                 return
             color2[node] = GRAY
@@ -441,7 +443,7 @@ def check_circular_dependencies(contracts, result):
 # Check 5: Contract structure completeness
 # ---------------------------------------------------------------------------
 
-def check_contract_structure(contracts, result):
+def check_contract_structure(contracts: dict[str, dict], result: LintResult) -> None:
     """Verify each contract has all required fields."""
     print("── Check 5: Contract structure completeness ──")
 
@@ -520,7 +522,7 @@ def check_contract_structure(contracts, result):
 # Check 6: MANIFEST.yaml consistency
 # ---------------------------------------------------------------------------
 
-def check_manifest_consistency(contracts, manifest, result):
+def check_manifest_consistency(contracts: dict[str, dict], manifest: dict | None, result: LintResult) -> None:
     """Verify MANIFEST.yaml lists all modules and states match."""
     print("── Check 6: MANIFEST.yaml consistency ──")
 
@@ -548,7 +550,7 @@ def check_manifest_consistency(contracts, manifest, result):
 # Check 7: STATE.yaml existence and health
 # ---------------------------------------------------------------------------
 
-def check_state_files(root, contracts, result, module_paths=None):
+def check_state_files(root: Path, contracts: dict[str, dict], result: LintResult, module_paths: dict[str, Path] | None = None) -> None:
     """Verify each module has a STATE.yaml with required fields."""
     print("── Check 7: STATE.yaml existence ──")
 
@@ -584,7 +586,7 @@ def check_state_files(root, contracts, result, module_paths=None):
 # Check 8: MEMORY.yaml caps and health
 # ---------------------------------------------------------------------------
 
-def check_memory_files(root, contracts, conventions, result, module_paths=None):
+def check_memory_files(root: Path, contracts: dict[str, dict], conventions: dict | None, result: LintResult, module_paths: dict[str, Path] | None = None) -> None:
     """Verify each module's MEMORY.yaml stays within budget."""
     print("── Check 8: MEMORY.yaml caps ──")
 
@@ -687,7 +689,7 @@ def check_memory_files(root, contracts, conventions, result, module_paths=None):
 # Check 9: Module granularity (3-7 interfaces)
 # ---------------------------------------------------------------------------
 
-def check_granularity(contracts, conventions, result):
+def check_granularity(contracts: dict[str, dict], conventions: dict | None, result: LintResult) -> None:
     """Verify each module has an appropriate number of interfaces."""
     print("── Check 9: Module granularity ──")
 
@@ -732,7 +734,7 @@ def check_granularity(contracts, conventions, result):
 # Check 10: TESTS.yaml coverage and validity
 # ---------------------------------------------------------------------------
 
-def check_test_files(root, contracts, result, module_paths=None):
+def check_test_files(root: Path, contracts: dict[str, dict], result: LintResult, module_paths: dict[str, Path] | None = None) -> None:
     """Verify each module has TESTS.yaml with coverage for all interfaces."""
     print("── Check 10: TESTS.yaml coverage ──")
 
@@ -827,7 +829,7 @@ def check_test_files(root, contracts, result, module_paths=None):
 # Check 11: Context budget per module
 # ---------------------------------------------------------------------------
 
-def _content_size(filepath):
+def _content_size(filepath: str | Path) -> int:
     """Return estimated token count of a YAML file excluding comments and blank lines."""
     content = Path(filepath).read_text()
     lines = [l for l in content.split('\n')
@@ -835,7 +837,7 @@ def _content_size(filepath):
     return count_tokens('\n'.join(lines))
 
 
-def check_context_budget(root, contracts, conventions, result, module_paths=None):
+def check_context_budget(root: Path, contracts: dict[str, dict], conventions: dict | None, result: LintResult, module_paths: dict[str, Path] | None = None) -> None:
     """Verify each module's cold-start context stays within token budget."""
     print("── Check 11: Context budget ──")
 
@@ -905,7 +907,7 @@ def check_context_budget(root, contracts, conventions, result, module_paths=None
 # Check 12: Conventions versioning
 # ---------------------------------------------------------------------------
 
-def check_conventions_version(conventions, result):
+def check_conventions_version(conventions: dict | None, result: LintResult) -> None:
     """Verify CONVENTIONS.yaml has a version and follows append-only policy."""
     print("── Check 12: Conventions versioning ──")
 
@@ -941,7 +943,7 @@ def check_conventions_version(conventions, result):
 # Check 13: Module types (regular vs infrastructure)
 # ---------------------------------------------------------------------------
 
-def check_module_types(contracts, conventions, result):
+def check_module_types(contracts: dict[str, dict], conventions: dict | None, result: LintResult) -> None:
     """Verify module types are valid and infrastructure modules are frozen."""
     print("── Check 13: Module types ──")
 
@@ -975,7 +977,7 @@ def check_module_types(contracts, conventions, result):
 # Check 14: ASSUMPTIONS.yaml structure
 # ---------------------------------------------------------------------------
 
-def check_assumptions(root, contracts, result, module_paths=None):
+def check_assumptions(root: Path, contracts: dict[str, dict], result: LintResult, module_paths: dict[str, Path] | None = None) -> dict[str, dict]:
     """Verify each module's ASSUMPTIONS.yaml is well-structured.
 
     Returns a dict of {module_name: parsed_data} for reuse by
@@ -1058,7 +1060,7 @@ def check_assumptions(root, contracts, result, module_paths=None):
 # Check 15: CHANGELOG.yaml structure
 # ---------------------------------------------------------------------------
 
-def check_changelog(root, contracts, result, module_paths=None):
+def check_changelog(root: Path, contracts: dict[str, dict], result: LintResult, module_paths: dict[str, Path] | None = None) -> None:
     """Verify each module has a well-structured CHANGELOG.yaml."""
     print("── Check 15: Changelog ──")
 
@@ -1099,7 +1101,7 @@ def check_changelog(root, contracts, result, module_paths=None):
 # Check 16: Replacement readiness (all module files present)
 # ---------------------------------------------------------------------------
 
-def check_replacement_ready(root, contracts, result, module_paths=None):
+def check_replacement_ready(root: Path, contracts: dict[str, dict], result: LintResult, module_paths: dict[str, Path] | None = None) -> None:
     """Verify each module has all files needed for a fresh agent to take over."""
     print("── Check 16: Replacement readiness ──")
 
@@ -1130,7 +1132,7 @@ def check_replacement_ready(root, contracts, result, module_paths=None):
 # Check 17: BUS validation (deltas and requests)
 # ---------------------------------------------------------------------------
 
-def check_bus(root, all_contracts, result):
+def check_bus(root: Path, all_contracts: dict[str, dict], result: LintResult) -> None:
     """Verify BUS/deltas and BUS/requests files are well-structured."""
     print("── Check 17: BUS validation ──")
 
@@ -1254,8 +1256,8 @@ def check_bus(root, all_contracts, result):
 # Check 18: Cross-module assumption compatibility
 # ---------------------------------------------------------------------------
 
-def check_assumption_compatibility(root, all_contracts, result, module_paths=None,
-                                   parsed_assumptions=None):
+def check_assumption_compatibility(root: Path, all_contracts: dict[str, dict], result: LintResult, module_paths: dict[str, Path] | None = None,
+                                   parsed_assumptions: dict[str, dict] | None = None) -> None:
     """Flag assumptions in the same category across different modules for review."""
     print("── Check 18: Assumption compatibility ──")
 
@@ -1311,7 +1313,7 @@ def check_assumption_compatibility(root, all_contracts, result, module_paths=Non
 # Check 19: Manager and orchestrator validation
 # ---------------------------------------------------------------------------
 
-def check_managers_orchestrator(root, all_contracts, manifest, result):
+def check_managers_orchestrator(root: Path, all_contracts: dict[str, dict], manifest: dict | None, result: LintResult) -> None:
     """Verify manager and orchestrator files are consistent with MANIFEST."""
     print("── Check 19: Manager/orchestrator validation ──")
 
@@ -1451,7 +1453,7 @@ def check_managers_orchestrator(root, all_contracts, manifest, result):
 # Check 20: Delta-contract accuracy
 # ---------------------------------------------------------------------------
 
-def check_delta_accuracy(root, all_contracts, result):
+def check_delta_accuracy(root: Path, all_contracts: dict[str, dict], result: LintResult) -> None:
     """Verify BUS deltas accurately describe what's in the current CONTRACTs."""
     print("── Check 20: Delta-contract accuracy ──")
 
@@ -1523,7 +1525,7 @@ def check_delta_accuracy(root, all_contracts, result):
 # Check 21: Contract version pinning
 # ---------------------------------------------------------------------------
 
-def check_version_pinning(contracts, all_contracts, result):
+def check_version_pinning(contracts: dict[str, dict], all_contracts: dict[str, dict], result: LintResult) -> None:
     """Verify consumes entries pin contract_version and it matches provider."""
     print("── Check 21: Version pinning ──")
 
@@ -1569,7 +1571,7 @@ def check_version_pinning(contracts, all_contracts, result):
 # Check 22: Stale BUS requests
 # ---------------------------------------------------------------------------
 
-def check_stale_requests(root, result, stale_days=STALE_REQUEST_DAYS):
+def check_stale_requests(root: Path, result: LintResult, stale_days: int = STALE_REQUEST_DAYS) -> None:
     """Warn on open BUS requests older than stale_days."""
     print("── Check 22: Stale requests ──")
 
@@ -1667,7 +1669,7 @@ _TYPE_MAP = {
 }
 
 
-def check_schemas(root, contracts, result, module_paths=None):
+def check_schemas(root: Path, contracts: dict[str, dict], result: LintResult, module_paths: dict[str, Path] | None = None) -> None:
     """Validate module files against known schemas — catch misspelled keys and wrong types."""
     print("── Check 23: Schema validation ──")
 
@@ -1710,7 +1712,7 @@ def check_schemas(root, contracts, result, module_paths=None):
                         f" {expected_type}, got {type(val).__name__}")
 
 
-def check_gateway(root, contracts, all_contracts, module_paths, result):
+def check_gateway(root: Path, contracts: dict[str, dict], all_contracts: dict[str, dict], module_paths: dict[str, Path], result: LintResult) -> None:
     """Check 24: Gateway validation for domain scaling."""
     print("── Check 24: Gateway validation ──")
 
@@ -1791,7 +1793,7 @@ def check_gateway(root, contracts, all_contracts, module_paths, result):
 # Main
 # ---------------------------------------------------------------------------
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='ANMA Contract Linter')
     parser.add_argument('--strict', action='store_true',
                         help='Treat warnings as errors')

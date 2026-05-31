@@ -17,13 +17,14 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent))
 from yaml_utils import parse_yaml_file
 from discover import discover_modules
 
 
-def load_module_tests(root, module_name, module_paths=None):
+def load_module_tests(root: Path, module_name: str, module_paths: dict[str, Path] | None = None) -> tuple[dict, dict]:
     """Load TESTS.yaml and CONTRACT for a module."""
     if module_paths is None:
         try:
@@ -57,7 +58,7 @@ def load_module_tests(root, module_name, module_paths=None):
     return tests, contract
 
 
-def validate_response(response, expect):
+def validate_response(response: Any, expect: Any) -> tuple[bool, str]:
     """Validate a response dict against expect rules. Returns (pass, details)."""
     if not isinstance(expect, dict):
         return True, "no expectations"
@@ -98,7 +99,7 @@ def validate_response(response, expect):
     return True, "OK"
 
 
-def generate_plan(tests, contract, module_name):
+def generate_plan(tests: dict, contract: dict, module_name: str) -> str:
     """Generate a human/AI-readable test plan."""
     test_list = tests.get('tests', [])
     if not isinstance(test_list, list):
@@ -151,7 +152,7 @@ def generate_plan(tests, contract, module_name):
     return '\n'.join(lines)
 
 
-def run_endpoint_tests(tests, module_name, endpoint):
+def run_endpoint_tests(tests: dict, module_name: str, endpoint: str) -> tuple[int, int, int]:
     """Run tests against a live HTTP endpoint."""
     from urllib.request import Request, urlopen
     from urllib.error import URLError, HTTPError
@@ -207,7 +208,7 @@ def run_endpoint_tests(tests, module_name, endpoint):
     return passed, failed, skipped
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA Contract Verifier')
     parser.add_argument('module', help='Module name to verify')

@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 
-def init_project(root):
+def init_project(root: str | Path) -> None:
     """Clear example modules and reset the project to a blank slate."""
     root = Path(root)
 
@@ -128,7 +128,7 @@ def init_project(root):
     print("  python3 tools/new_module.py <name>")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='Initialize a clean ANMA project')
     parser.add_argument('--path', default='.', help='Project root path')
     args = parser.parse_args()

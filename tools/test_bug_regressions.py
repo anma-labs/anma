@@ -21,44 +21,44 @@ TOOLS_DIR = Path(__file__).parent
 class TempProject:
     """Context manager for temporary ANMA project directories."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._tmpdir = None
         self.root = None
 
-    def __enter__(self):
+    def __enter__(self) -> "TempProject":
         self._tmpdir = tempfile.TemporaryDirectory()
         self.root = Path(self._tmpdir.name)
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args: object) -> None:
         self._tmpdir.cleanup()
 
-    def add_module(self, name, contract_text):
+    def add_module(self, name: str, contract_text: str) -> Path:
         d = self.root / 'modules' / name
         d.mkdir(parents=True, exist_ok=True)
         (d / 'CONTRACT.yaml').write_text(contract_text)
         return d
 
-    def add_domain_module(self, domain, name, contract_text):
+    def add_domain_module(self, domain: str, name: str, contract_text: str) -> Path:
         d = self.root / 'domains' / domain / name
         d.mkdir(parents=True, exist_ok=True)
         (d / 'CONTRACT.yaml').write_text(contract_text)
         return d
 
-    def add_file(self, relpath, content):
+    def add_file(self, relpath: str, content: str) -> Path:
         p = self.root / relpath
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content)
         return p
 
-    def setup_conventions(self, version=3):
+    def setup_conventions(self, version: int = 3) -> None:
         self.add_file('CONVENTIONS.yaml',
             f"conventions_version: {version}\n"
             "naming:\n  modules: kebab-case\n  interfaces: snake_case\n"
             "  errors: SCREAMING_SNAKE_CASE\n"
             "token_thresholds:\n  contract_max: 500\n  recovery_max: 800\n")
 
-    def setup_manifest(self, project='test', modules=None, managers=None):
+    def setup_manifest(self, project: str = 'test', modules: dict[str, str] | None = None, managers: dict[str, list[str]] | None = None) -> None:
         lines = [f"project: {project}", "version: 1", "", "modules:"]
         for name, status in (modules or {}).items():
             lines.append(f"  {name}: {{ status: {status} }}")
@@ -74,7 +74,7 @@ class TempProject:
         lines.append("orchestrator: active")
         self.add_file('MANIFEST.yaml', '\n'.join(lines) + '\n')
 
-    def setup_graph(self, modules=None):
+    def setup_graph(self, modules: dict[str, dict[str, list[str]]] | None = None) -> None:
         lines = ["version: 1", "", "modules:"]
         for name, data in (modules or {}).items():
             consumes = data.get('consumes', [])
@@ -101,7 +101,7 @@ MINIMAL_CONTRACT = (
 
 class TestBug001AppendPreservesExisting(unittest.TestCase):
 
-    def test_append_merges_with_existing_tests(self):
+    def test_append_merges_with_existing_tests(self) -> None:
         """--append must keep existing tests and add new ones."""
         from gen_tests import generate_tests, format_tests_yaml
         with TempProject() as tp:
@@ -153,7 +153,7 @@ class TestBug001AppendPreservesExisting(unittest.TestCase):
 
 class TestBug002ClaimsQuoting(unittest.TestCase):
 
-    def test_special_chars_in_by_field(self):
+    def test_special_chars_in_by_field(self) -> None:
         """Claims with YAML-special characters must round-trip correctly."""
 
         with TempProject() as tp:
@@ -169,7 +169,7 @@ class TestBug002ClaimsQuoting(unittest.TestCase):
             self.assertIn('test-mod', loaded)
             self.assertEqual(loaded['test-mod']['by'], 'agent: admin')
 
-    def test_yaml_boolean_word_in_by(self):
+    def test_yaml_boolean_word_in_by(self) -> None:
         """Claim by 'yes' must stay as string, not become boolean True."""
 
         with TempProject() as tp:
@@ -186,7 +186,7 @@ class TestBug002ClaimsQuoting(unittest.TestCase):
 
 class TestBug003RenameWordBoundary(unittest.TestCase):
 
-    def test_no_substring_replacement(self):
+    def test_no_substring_replacement(self) -> None:
         """Renaming 'app' to 'platform' must not affect module 'app-auth'."""
         with TempProject() as tp:
             tp.add_file('MANIFEST.yaml',
@@ -208,7 +208,7 @@ class TestBug003RenameWordBoundary(unittest.TestCase):
 
 class TestBug004ConsumesDeltasGenerated(unittest.TestCase):
 
-    def test_consumes_only_change_produces_deltas(self):
+    def test_consumes_only_change_produces_deltas(self) -> None:
         """Changes only in consumes section must generate delta entries."""
         from contract_diff import generate_deltas
         with TempProject() as tp:
@@ -236,7 +236,7 @@ class TestBug004ConsumesDeltasGenerated(unittest.TestCase):
 
 class TestBug005TransitivePinCorrectness(unittest.TestCase):
 
-    def test_transitive_consumer_has_no_direct_pin(self):
+    def test_transitive_consumer_has_no_direct_pin(self) -> None:
         """Transitive consumers must NOT show the intermediate module's pin."""
         from plan_migration import build_migration_plan
         with TempProject() as tp:
@@ -274,7 +274,7 @@ class TestBug005TransitivePinCorrectness(unittest.TestCase):
 
 class TestBug006NoOsSystem(unittest.TestCase):
 
-    def test_no_os_system_calls(self):
+    def test_no_os_system_calls(self) -> None:
         """new_module.py must not use os.system (command injection risk)."""
         source = (TOOLS_DIR / 'new_module.py').read_text()
         self.assertNotIn('os.system(', source,
@@ -287,7 +287,7 @@ class TestBug006NoOsSystem(unittest.TestCase):
 
 class TestBug007ListFormatManagers(unittest.TestCase):
 
-    def test_list_format_managers_preserved(self):
+    def test_list_format_managers_preserved(self) -> None:
         """Managers stored as lists must be preserved after sync_all rebuild."""
         with TempProject() as tp:
             tp.setup_conventions()
@@ -323,7 +323,7 @@ class TestBug007ListFormatManagers(unittest.TestCase):
 
 class TestBug008MalformedTestsYaml(unittest.TestCase):
 
-    def test_malformed_tests_yaml_exits_nonzero(self):
+    def test_malformed_tests_yaml_exits_nonzero(self) -> None:
         """verify_contract.py must fail loudly on malformed TESTS.yaml."""
         with TempProject() as tp:
             mod_dir = tp.add_module('bad-mod', MINIMAL_CONTRACT.format(name='bad-mod'))
@@ -342,7 +342,7 @@ class TestBug008MalformedTestsYaml(unittest.TestCase):
 
 class TestBug009ExactBusMatching(unittest.TestCase):
 
-    def test_bus_cleanup_uses_exact_match(self):
+    def test_bus_cleanup_uses_exact_match(self) -> None:
         """Removing 'auth' must not delete BUS files for 'user-auth'."""
         from remove_module import clean_bus
         with TempProject() as tp:
@@ -363,7 +363,7 @@ class TestBug009ExactBusMatching(unittest.TestCase):
 
 class TestBug010FilteredLintScope(unittest.TestCase):
 
-    def test_plugin_respects_module_filter(self):
+    def test_plugin_respects_module_filter(self) -> None:
         """check_conventions_pin must only report for filtered modules."""
         from checks.check_conventions_pin import run
         with TempProject() as tp:
@@ -393,7 +393,7 @@ class TestBug010FilteredLintScope(unittest.TestCase):
 
 class TestBug011NoneTokenThresholds(unittest.TestCase):
 
-    def test_p2_handles_none_token_thresholds(self):
+    def test_p2_handles_none_token_thresholds(self) -> None:
         """P2 check must not crash when token_thresholds is None."""
         from checks.check_principles import check_p2_tokens_are_bottleneck
 
@@ -409,7 +409,7 @@ class TestBug011NoneTokenThresholds(unittest.TestCase):
         except AttributeError:
             self.fail("check_p2 crashed on None token_thresholds")
 
-    def test_p6_handles_none_token_thresholds(self):
+    def test_p6_handles_none_token_thresholds(self) -> None:
         """P6 check must not crash when token_thresholds is None."""
         from checks.check_principles import check_p6_recovery_is_cheap
 
@@ -432,7 +432,7 @@ class TestBug011NoneTokenThresholds(unittest.TestCase):
 
 class TestBug012DomainModulePaths(unittest.TestCase):
 
-    def test_domain_module_uses_correct_path(self):
+    def test_domain_module_uses_correct_path(self) -> None:
         """Generated CLAUDE.md must use domains/ path, not modules/."""
         from gen_claude_md import generate_module_claude_md
         with TempProject() as tp:
@@ -455,7 +455,7 @@ class TestBug012DomainModulePaths(unittest.TestCase):
 
 class TestBug013StderrOnFailure(unittest.TestCase):
 
-    def test_source_uses_stderr_or_stdout(self):
+    def test_source_uses_stderr_or_stdout(self) -> None:
         """import_contracts.py must prefer stderr over stdout for error display."""
         source = (TOOLS_DIR / 'import_contracts.py').read_text()
         self.assertIn('result.stderr or result.stdout', source,
@@ -470,7 +470,7 @@ class TestBug013StderrOnFailure(unittest.TestCase):
 
 class TestBug014StubRegeneration(unittest.TestCase):
 
-    def test_deleted_tests_yaml_regenerated(self):
+    def test_deleted_tests_yaml_regenerated(self) -> None:
         """Deleted TESTS.yaml must be regenerated even if contract hash matches."""
         with TempProject() as tp:
             tp.setup_conventions()
@@ -508,7 +508,7 @@ class TestBug014StubRegeneration(unittest.TestCase):
 
 class TestBug015PurposeQuoteEscaping(unittest.TestCase):
 
-    def test_purpose_with_double_quotes(self):
+    def test_purpose_with_double_quotes(self) -> None:
         """Purpose containing double quotes must produce valid YAML."""
         from gen_contract import generate_contract
         content, _ = generate_contract(
@@ -524,7 +524,7 @@ class TestBug015PurposeQuoteEscaping(unittest.TestCase):
 
 class TestBug016ScopeAddWithoutOwnsLine(unittest.TestCase):
 
-    def test_add_module_to_scope_without_owns_line(self):
+    def test_add_module_to_scope_without_owns_line(self) -> None:
         """scope_add_module must work even if SCOPE.yaml has no owns: line."""
         from yaml_editor import scope_add_module
         with TempProject() as tp:
@@ -543,7 +543,7 @@ class TestBug016ScopeAddWithoutOwnsLine(unittest.TestCase):
 
 class TestBug017ManagerRollbackOnFailure(unittest.TestCase):
 
-    def test_duplicate_manager_exits_nonzero(self):
+    def test_duplicate_manager_exits_nonzero(self) -> None:
         """Creating a duplicate manager must exit non-zero and not leave orphan dir."""
         with TempProject() as tp:
             tp.setup_manifest(managers={'existing-mgr': []})
@@ -563,7 +563,7 @@ class TestBug017ManagerRollbackOnFailure(unittest.TestCase):
 
 class TestSec001ImportPathTraversal(unittest.TestCase):
 
-    def test_traversal_in_yaml_module_field_rejected(self):
+    def test_traversal_in_yaml_module_field_rejected(self) -> None:
         """A CONTRACT.yaml with module: '../../tmp/evil' must be rejected."""
         from import_contracts import import_contract
         with TempProject() as tp:
@@ -576,7 +576,7 @@ class TestSec001ImportPathTraversal(unittest.TestCase):
             self.assertFalse(result, "Import should reject traversal in module name")
             self.assertFalse((tp.root / '../../tmp/evil').exists())
 
-    def test_traversal_in_domain_arg_rejected(self):
+    def test_traversal_in_domain_arg_rejected(self) -> None:
         """--domain with '../' must be rejected."""
         from import_contracts import import_contract
         with TempProject() as tp:
@@ -588,7 +588,7 @@ class TestSec001ImportPathTraversal(unittest.TestCase):
             result = import_contract(contract, tp.root, domain='../../tmp/evil')
             self.assertFalse(result, "Import should reject traversal in domain")
 
-    def test_valid_kebab_module_accepted(self):
+    def test_valid_kebab_module_accepted(self) -> None:
         """A valid kebab-case module name must still be accepted."""
         from import_contracts import import_contract
         with TempProject() as tp:
@@ -608,7 +608,7 @@ class TestSec001ImportPathTraversal(unittest.TestCase):
 
 class TestSec002NewModuleDomainTraversal(unittest.TestCase):
 
-    def test_traversal_domain_rejected(self):
+    def test_traversal_domain_rejected(self) -> None:
         """new_module.py --domain '../../../tmp/evil' must exit non-zero."""
         with TempProject() as tp:
             tp.setup_conventions()
@@ -621,7 +621,7 @@ class TestSec002NewModuleDomainTraversal(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn('not valid kebab-case', result.stdout + result.stderr)
 
-    def test_valid_domain_accepted(self):
+    def test_valid_domain_accepted(self) -> None:
         """new_module.py --domain 'backend' must succeed."""
         with TempProject() as tp:
             tp.setup_conventions()
@@ -641,7 +641,7 @@ class TestSec002NewModuleDomainTraversal(unittest.TestCase):
 
 class TestSec003ClaimsYamlInjection(unittest.TestCase):
 
-    def test_double_quote_in_by_roundtrips(self):
+    def test_double_quote_in_by_roundtrips(self) -> None:
         """A 'by' field containing double quotes must survive save/load."""
 
         with TempProject() as tp:
@@ -654,7 +654,7 @@ class TestSec003ClaimsYamlInjection(unittest.TestCase):
             loaded = _load_claims(tp.root)
             self.assertEqual(loaded['test-mod']['by'], 'foo", injected: true, x: "bar')
 
-    def test_colon_in_by_roundtrips(self):
+    def test_colon_in_by_roundtrips(self) -> None:
         """A 'by' field with YAML-special ':' must round-trip correctly."""
 
         with TempProject() as tp:
@@ -667,7 +667,7 @@ class TestSec003ClaimsYamlInjection(unittest.TestCase):
             loaded = _load_claims(tp.root)
             self.assertEqual(loaded['test-mod']['by'], 'agent: admin')
 
-    def test_yaml_boolean_word_stays_string(self):
+    def test_yaml_boolean_word_stays_string(self) -> None:
         """'yes' as by-field must stay string, not become boolean."""
 
         with TempProject() as tp:
@@ -677,7 +677,7 @@ class TestSec003ClaimsYamlInjection(unittest.TestCase):
             self.assertIsInstance(loaded['mod']['by'], str)
             self.assertEqual(loaded['mod']['by'], 'yes')
 
-    def test_newline_in_branch_roundtrips(self):
+    def test_newline_in_branch_roundtrips(self) -> None:
         """A branch containing newlines must not corrupt the file."""
 
         with TempProject() as tp:
@@ -690,7 +690,7 @@ class TestSec003ClaimsYamlInjection(unittest.TestCase):
             loaded = _load_claims(tp.root)
             self.assertEqual(loaded['test-mod']['branch'], 'line1\nline2')
 
-    def test_claims_file_is_valid_yaml(self):
+    def test_claims_file_is_valid_yaml(self) -> None:
         """claims.yaml must always be parseable after save with adversarial input."""
 
         with TempProject() as tp:

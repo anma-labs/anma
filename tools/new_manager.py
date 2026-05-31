@@ -5,7 +5,7 @@ Usage: python3 new_manager.py core-manager --owns auth,user-profiles
 import argparse, re, sys
 from pathlib import Path
 
-def find_project_root(start='.'):
+def find_project_root(start: str = '.') -> Path:
     """Locate the nearest ancestor directory containing MANIFEST.yaml."""
     p = Path(start).resolve()
     if (p / 'MANIFEST.yaml').exists(): return p
@@ -13,7 +13,7 @@ def find_project_root(start='.'):
         if (parent / 'MANIFEST.yaml').exists(): return parent
     return p
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='ANMA New Manager Scaffolding')
     parser.add_argument('name', help='Manager name (kebab-case)')
     parser.add_argument('--owns', type=str, default=None,

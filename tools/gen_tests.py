@@ -15,13 +15,14 @@ Zero external dependencies.
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent))
 from yaml_utils import parse_yaml_file
 from discover import discover_modules
 
 
-def _module_dir(root, module_name, module_paths=None):
+def _module_dir(root: Path, module_name: str, module_paths: dict[str, Path] | None = None) -> Path:
     if module_paths is None:
         try:
             module_paths = discover_modules(root)
@@ -30,7 +31,7 @@ def _module_dir(root, module_name, module_paths=None):
     return module_paths.get(module_name, root / 'modules' / module_name)
 
 
-def generate_tests(root, module_name, module_paths=None):
+def generate_tests(root: Path, module_name: str, module_paths: dict[str, Path] | None = None) -> list[dict[str, Any]]:
     """Generate test stubs from a module's CONTRACT.yaml."""
     contract_path = _module_dir(root, module_name, module_paths=module_paths) / 'CONTRACT.yaml'
     if not contract_path.exists():
@@ -90,7 +91,7 @@ def generate_tests(root, module_name, module_paths=None):
     return tests
 
 
-def _sample_value(key, type_hint):
+def _sample_value(key: str, type_hint: str) -> str | bool | int:
     """Generate a sample value based on key name and type hint."""
     hint = type_hint.lower()
     if 'uuid' in hint or key.endswith('_id') or key == 'id':
@@ -110,7 +111,7 @@ def _sample_value(key, type_hint):
     return f'test_{key}'
 
 
-def _error_input(sample_input, error_code):
+def _error_input(sample_input: dict[str, Any], error_code: str) -> dict[str, Any]:
     """Generate input that would trigger the given error."""
     error_input = dict(sample_input)
     code_lower = error_code.lower()
@@ -133,7 +134,7 @@ def _error_input(sample_input, error_code):
     return error_input
 
 
-def format_tests_yaml(module_name, tests):
+def format_tests_yaml(module_name: str, tests: list[dict[str, Any]]) -> str:
     """Format tests as TESTS.yaml content."""
     lines = [
         "# Auto-generated test stubs. Review and customize before using.",
@@ -175,7 +176,7 @@ def format_tests_yaml(module_name, tests):
     return '\n'.join(lines) + '\n'
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA Test Stub Generator')
     parser.add_argument('module', help='Module name')

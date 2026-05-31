@@ -77,7 +77,7 @@ GROUP_COMMANDS = {
 }
 
 
-def print_help():
+def print_help() -> None:
     """Display available commands and usage information."""
     print("ANMA CLI — unified entry point for all scaffold tools.\n")
     print("Usage: anma <command> [args...]\n")
@@ -100,7 +100,7 @@ def print_help():
     print("All commands also work standalone: python3 lint_contracts.py\n")
 
 
-def run_module(module_name, args):
+def run_module(module_name: str, args: list[str]) -> None:
     """Import and run a module's main() function with patched sys.argv."""
     sys.argv = [module_name + '.py'] + args
 
@@ -117,7 +117,7 @@ def run_module(module_name, args):
         sys.exit(e.code)
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2 or sys.argv[1] in ('-h', '--help', 'help'):
         print_help()
         sys.exit(0)

@@ -8,7 +8,7 @@ Every tool that needs module paths imports from here.
 from pathlib import Path
 
 
-def discover_modules(root):
+def discover_modules(root: str | Path) -> dict[str, Path]:
     """Find all modules. Returns {module_name: Path}.
 
     Scans both flat (modules/) and domain (domains/<domain>/) layouts.
@@ -46,7 +46,7 @@ def discover_modules(root):
     return found
 
 
-def get_module_domain(root, module_path):
+def get_module_domain(root: str | Path, module_path: str | Path) -> str | None:
     """Infer domain from filesystem path. Returns domain name or None.
 
     A module is in a domain if its path is root/domains/<domain>/<module>.
@@ -60,7 +60,7 @@ def get_module_domain(root, module_path):
         return None
 
 
-def discover_domains(root):
+def discover_domains(root: str | Path) -> dict[str, dict[str, list[str] | Path | None]]:
     """Find all domains. Returns {domain_name: {'modules': [names], 'gateway': Path|None}}.
 
     Only scans domains/ directory. Returns empty dict for flat-only projects.

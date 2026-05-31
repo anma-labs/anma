@@ -25,7 +25,7 @@ from yaml_utils import parse_yaml_file, load_all_contracts
 from discover import discover_modules
 
 
-def build_matrix(root):
+def build_matrix(root: Path) -> dict:
     """Build the full compatibility matrix from project files."""
     try:
         module_paths = discover_modules(root)
@@ -143,7 +143,7 @@ def build_matrix(root):
     }
 
 
-def format_report(matrix):
+def format_report(matrix: dict) -> str:
     """Format the matrix as a human-readable report."""
     lines = [
         "# ANMA Compatibility Matrix",
@@ -203,7 +203,7 @@ def format_report(matrix):
     return '\n'.join(lines) + '\n'
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='ANMA Compatibility Matrix')
     parser.add_argument('--json', action='store_true',

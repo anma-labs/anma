@@ -29,11 +29,11 @@ from discover import discover_modules
 
 # ── Token manipulation ───────────────────────────────────────────────────
 
-def count_tokens(text):
+def count_tokens(text: str) -> int:
     return len(text) // 4
 
 
-def pad_memory_to_target(contract_yaml, state_yaml, memory_yaml, target_tokens):
+def pad_memory_to_target(contract_yaml: str, state_yaml: str, memory_yaml: str, target_tokens: int) -> str:
     """Expand MEMORY.yaml entries until the combined payload reaches target_tokens."""
     current = count_tokens(contract_yaml + state_yaml + memory_yaml)
 
@@ -121,14 +121,14 @@ Write the complete Python implementation. Return ONLY the code, no explanations.
 
 # ── Scoring (fixed: parses YAML properly, strips markdown) ───────────────
 
-def _strip_markdown(text):
+def _strip_markdown(text: str) -> str:
     """Remove ```python fences from Claude's response."""
     text = re.sub(r'```(?:python|py)?\n', '', text)
     text = re.sub(r'```\s*$', '', text, flags=re.MULTILINE)
     return text
 
 
-def _parse_contract(contract_yaml):
+def _parse_contract(contract_yaml: str) -> dict[str, list[str]]:
     """Parse interfaces, errors, invariants from YAML using yaml.safe_load."""
     try:
         contract = yaml.safe_load(contract_yaml)
@@ -159,7 +159,7 @@ def _parse_contract(contract_yaml):
     }
 
 
-def score_response(response_text, contract_yaml):
+def score_response(response_text: str, contract_yaml: str) -> dict[str, int | float]:
     """Score implementation against contract on 4 dimensions."""
     code = _strip_markdown(response_text)
     fields = _parse_contract(contract_yaml)
@@ -228,7 +228,7 @@ def score_response(response_text, contract_yaml):
 
 # ── Claude Code CLI ──────────────────────────────────────────────────────
 
-def run_claude_code(prompt, max_turns=1, timeout=120):
+def run_claude_code(prompt: str, max_turns: int = 1, timeout: int = 120) -> str:
     """Invoke claude CLI in print mode and return the text output."""
     cmd = ["claude", "-p", "--max-turns", str(max_turns), "--output-format", "text"]
     try:
@@ -245,7 +245,7 @@ def run_claude_code(prompt, max_turns=1, timeout=120):
         return "ERROR: 'claude' not found. Install: npm install -g @anthropic-ai/claude-code"
 
 
-def check_claude_available():
+def check_claude_available() -> bool:
     """Return True if the claude CLI is installed and callable."""
     try:
         r = subprocess.run(["claude", "--version"], capture_output=True, text=True, timeout=10)
@@ -256,7 +256,7 @@ def check_claude_available():
 
 # ── Module selection ──────────────────────────────────────────────────────
 
-def select_test_modules(projects_dir, count=6):
+def select_test_modules(projects_dir: Path, count: int = 6) -> list[dict[str, str | int]]:
     """Pick diverse modules from benchmark projects for degradation testing."""
     candidates = []
     for pd in sorted(projects_dir.iterdir()):
@@ -290,7 +290,7 @@ def select_test_modules(projects_dir, count=6):
 
 # ── Eval runner ───────────────────────────────────────────────────────────
 
-def run_eval(contract, state, memory, target_tokens, trial):
+def run_eval(contract: str, state: str, memory: str, target_tokens: int, trial: int) -> dict[str, int | str | dict | None]:
     """Run one degradation trial at target_tokens and score the response."""
     padded = pad_memory_to_target(contract, state, memory, target_tokens)
     actual = count_tokens(contract + state + padded)
@@ -306,7 +306,7 @@ def run_eval(contract, state, memory, target_tokens, trial):
             "actual_tokens": actual, "scores": scores, "response_length": len(resp)}
 
 
-def _degradation_summary(results, token_levels):
+def _degradation_summary(results: list[dict], token_levels: list[int]) -> dict[str, list | dict | None]:
     by_level = {}
     for level in token_levels:
         all_s = []
@@ -340,7 +340,7 @@ def _degradation_summary(results, token_levels):
     }
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser(description="Phase 2: Agent degradation testing via Claude Code")
     ap.add_argument("--projects-dir", default="benchmark_projects")
     ap.add_argument("--output", default="benchmark_results/phase2_degradation.json")
