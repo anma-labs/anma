@@ -1,7 +1,7 @@
 # Auto-generated from CONTRACT consumes fields.
 # Regenerate with: python3 gen_graph.py
 version: 1
-updated: 2026-05-31T17:51:07Z
+updated: 2026-05-31T18:16:51Z
 
 modules:
   notifications:

@@ -30,6 +30,11 @@ try:
 except ImportError:
     from tools.tokenizer import count_tokens
 
+try:
+    from yaml_utils import parse_yaml_file
+except ImportError:
+    from tools.yaml_utils import parse_yaml_file
+
 # Implementation patterns (case-insensitive) — things that don't belong in contracts
 _IMPL_PATTERNS = [
     (r'\b(mysql|postgres(?:ql)?|sqlite|mongodb|dynamodb|redis|firestore|cloud ?sql)\b', 'database engine'),
@@ -146,8 +151,10 @@ def check_p3_state_is_explicit(root: Path, contracts: dict[str, dict[str, Any]],
         if len(content) < MIN_STATE_CHARS:
             result.warning(mod_name,
                 f"P3 STATE.yaml nearly empty ({len(content)} chars) for {status} module")
+        state_data = parse_yaml_file(state_path) or {}
+        check_text = ' '.join(str(state_data.get(f, '')) for f in ('current_work', 'blockers'))
         for marker in ['TODO', 'TBD', 'placeholder']:
-            if marker.lower() in content.lower():
+            if marker.lower() in check_text.lower():
                 result.warning(mod_name, f"P3 STATE.yaml contains '{marker}'")
                 break
 

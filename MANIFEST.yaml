@@ -1,11 +1,11 @@
-project: my-project
+project: anma-scaffold
 version: 1
-updated: 2026-05-31T17:51:07Z
+updated: 2026-05-31T18:16:51Z
 
 modules:
-  notifications: { status: draft, owner: core-manager }
-  todo-api: { status: draft, owner: core-manager }
-  user-auth: { status: draft, owner: core-manager }
+  notifications: { status: stable, owner: core-manager, domain: core }
+  todo-api: { status: stable, owner: core-manager, domain: core }
+  user-auth: { status: stable, owner: core-manager, domain: core }
 
 managers:
   core-manager: { owns: [user-auth, todo-api, notifications] }

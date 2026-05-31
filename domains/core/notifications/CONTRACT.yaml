@@ -1,7 +1,7 @@
 module: notifications
 version: 1
 conventions_version: 3
-status: draft
+status: stable
 type: regular
 
 purpose: "Push notifications, emails, and in-app alerts"

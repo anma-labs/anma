@@ -665,12 +665,9 @@ class TestCLI(unittest.TestCase):
                              f"stdout: {result.stdout.decode()[-500:]}")
 
     def test_module_filter(self) -> None:
-        # Dynamically find the first available module instead of hardcoding
-        modules_dir = PROJECT_ROOT / 'modules'
-        module_dirs = [d.name for d in modules_dir.iterdir()
-                       if d.is_dir() and (d / 'CONTRACT.yaml').exists()]
-        self.assertTrue(module_dirs, "No modules found in scaffold")
-        first_module = sorted(module_dirs)[0]
+        module_paths = discover_modules(PROJECT_ROOT)
+        self.assertTrue(module_paths, "No modules found in scaffold")
+        first_module = sorted(module_paths.keys())[0]
         result = subprocess.run(
             [sys.executable, 'lint_contracts.py', '--module', first_module],
             capture_output=True, cwd=str(TOOLS_DIR))

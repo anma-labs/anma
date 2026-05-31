@@ -378,7 +378,7 @@ def main() -> None:
         # Full scaffold copy (needs existing modules to remove)
         gs = Path(tempfile.mkdtemp(prefix='anma_gs_'))
         copy_scaffold(gs)
-        shutil.copytree(str(PROJECT_ROOT / 'modules'), str(gs / 'modules'))
+        shutil.copytree(str(PROJECT_ROOT / 'domains'), str(gs / 'domains'))
         shutil.copy2(str(PROJECT_ROOT / 'MANIFEST.yaml'), str(gs / 'MANIFEST.yaml'))
         shutil.copy2(str(PROJECT_ROOT / 'GRAPH.yaml'), str(gs / 'GRAPH.yaml'))
 
