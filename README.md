@@ -6,9 +6,9 @@
 
 Plain-YAML module contracts that give AI coding agents your full architecture in ~350 tokens per module — instead of re-reading thousands of lines of source code every session.
 
-<!-- TODO: Replace with actual demo GIF -->
-<!-- ![ANMA Demo](docs/assets/demo.gif) -->
-*Demo GIF coming soon — contract design → linter validation → implementation in one session.*
+
+![ANMA Demo](docs/assets/demo.gif)
+
 
 ## Get Started
 
