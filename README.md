@@ -1,131 +1,40 @@
 # ANMA — AI-Native Modular Architecture
 
-**Plain-YAML module contracts that help AI coding agents understand your codebase in ~350 tokens instead of 5,000–20,000.**
+[![CI](https://github.com/anma-labs/anma-scaffold/actions/workflows/lint.yml/badge.svg)](https://github.com/anma-labs/anma-scaffold/actions/workflows/lint.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-218%20passing-brightgreen)](#)
 
-No hallucinated interfaces. No undeclared dependencies. No silent integration bugs.
+Plain-YAML module contracts that give AI coding agents your full architecture in ~350 tokens per module — instead of re-reading thousands of lines of source code every session.
 
-ANMA is a lightweight scaffold for AI-assisted software development. Each module gets a compact, machine-readable contract that declares what it provides, what it consumes, which errors it can raise, and which behaviors must never change.
+<!-- TODO: Replace with actual demo GIF -->
+<!-- ![ANMA Demo](docs/assets/demo.gif) -->
+*Demo GIF coming soon — contract design → linter validation → implementation in one session.*
 
-Built for **Claude Code**. Contracts are plain YAML, so any AI tool can read them, but the full design → contract → implementation workflow is optimized for Claude Code.
+## Get Started
 
----
-
-## Why ANMA Exists
-
-AI coding agents often waste context reverse-engineering a codebase before they can safely change it. For a single auth module, an agent may need to inspect controllers, models, serializers, routes, middleware, tests, settings, exceptions, and dependencies just to infer the real interface.
-
-```text
-Agent reads auth/controllers/user.py          → 850 tokens
-Agent reads auth/models/user.py               → 420 tokens
-Agent reads auth/serializers.py               → 380 tokens
-Agent reads auth/urls.py                      → 120 tokens
-Agent reads auth/middleware.py                → 290 tokens
-Agent reads auth/tests/test_user.py           → 640 tokens
-Agent reads auth/exceptions.py                → 180 tokens
-Agent reads requirements.txt (partial)        → 200 tokens
-Agent reads settings.py (partial)             → 350 tokens
-Agent infers error types                      → hallucination risk
-                                             Total: ~3,400+ tokens
+```bash
+git clone https://github.com/anma-labs/anma-scaffold my-project
+cd my-project
+pip install pyyaml
 ```
 
-ANMA replaces that discovery step with one explicit contract:
+Then open Claude Code and tell it what to build:
 
-```yaml
-module: user-auth
-version: 1
-status: draft
-
-provides:
-  - id: register
-    input:
-      email: string
-      password: string
-      display_name: string
-    output:
-      user_id: uuid
-      token: string
-    errors:
-      - EMAIL_TAKEN
-      - WEAK_PASSWORD
-      - INVALID_EMAIL
-    invariants:
-      - "auto-sends verification email"
-      - "password must be at least 8 characters"
-
-  - id: login
-    input:
-      email: string
-      password: string
-    output:
-      user_id: uuid
-      token: string
-    errors:
-      - INVALID_CREDENTIALS
-      - ACCOUNT_LOCKED
-    invariants:
-      - "same error for wrong password and non-existent email"
-
-consumes: []
+```bash
+claude --permission-mode auto
 ```
 
 ```text
-Agent reads modules/user-auth/CONTRACT.yaml   → ~350 tokens
-                                             Total: ~350 tokens
+Read CLAUDE.md and CONVENTIONS.yaml. I want to build [describe your project].
+Design the contracts first, then implement each module from its contracts.
+Run the linter to verify 0 errors before and after implementation.
 ```
 
-The result: the agent sees the module’s inputs, outputs, errors, invariants, and dependencies without guessing from implementation details.
+That's it. Claude reads the conventions, designs contracts for your modules, validates them with the 24-check linter, and implements from the contracts.
 
----
+## Add to an Existing Project
 
-## What ANMA Gives You
-
-- **Explicit module boundaries** — every interface, dependency, error, and invariant is declared.
-- **Lower token usage** — agents read compact contracts instead of entire implementation trees.
-- **Less hallucination** — agents do not invent missing interfaces or guess error names.
-- **Safer implementation** — the linter checks contracts before code gets written.
-- **Recoverable AI sessions** — modules carry enough state for Claude to resume later.
-- **Change impact analysis** — see what breaks before modifying a contract.
-- **Parallel AI work** — different agents can work on different modules because contracts define clear ownership and boundaries.
-- **Automatic scaling structure** — as projects grow, ANMA keeps related modules organized so the architecture stays understandable without extra planning overhead.
-
----
-
-## When to Use ANMA
-
-Use Claude alone for quick scripts, isolated files, and small prototypes.
-
-Use **Claude + ANMA** when your project has multiple modules that depend on each other and you want AI-assisted development to stay coherent across sessions, features, and implementation passes.
-
-| Scenario | Claude alone | Claude + ANMA |
-|---|---|---|
-| **1–3 files** | Works great | Usually overkill |
-| **5+ modules** | May re-infer interfaces differently across sessions | Reads declared contracts |
-| **Adding a feature later** | Re-reads source and guesses architecture | Reads contracts and checks impact |
-| **Stopping mid-project** | Requires re-explaining context | Resumes from `STATE.yaml` and `MEMORY.yaml` |
-| **Integration bugs** | Often found at runtime | Caught earlier by linted contracts |
-| **Token usage at scale** | Thousands of tokens per module | Hundreds of tokens per module |
-
-ANMA is best for projects with enough moving parts to need architectural memory — roughly **5+ modules**, multiple interacting features, or a team that expects to use AI agents beyond the first implementation pass. For tiny scripts or one-off prototypes, it is probably more structure than you need.
-
----
-
-## For Engineers Already Using Claude Code
-
-If you're already shipping with Claude Code, you've hit these problems:
-
-**"Read the codebase first"** — Every new session starts with Claude re-reading your entire project. At 50+ files, that's thousands of tokens before any work begins. ANMA contracts give Claude the full architecture in ~500 tokens per module.
-
-**"It broke my other module"** — Claude adds a feature to one module and silently breaks another's interface. ANMA's linter catches undeclared dependencies, missing error codes, and gateway violations before implementation starts.
-
-**"I can't run agents in parallel"** — Two Claude Code instances editing the same project cause merge conflicts and duplicate work. ANMA's claims system coordinates ownership, domain gateways prevent cross-boundary violations, and derived files regenerate automatically on merge.
-
-**"The architecture is in my head"** — You know which modules depend on which, but Claude doesn't. Every session you re-explain the same constraints. ANMA contracts externalize those decisions into machine-readable files that every agent reads automatically.
-
----
-
-## Retrofitting an Existing Project
-
-You don't need to start from scratch. Point Claude Code at your existing project:
+Already have a codebase? Point Claude Code at it:
 
 ```bash
 cd your-existing-project
@@ -136,357 +45,141 @@ claude --permission-mode auto
 Clone https://github.com/anma-labs/anma-scaffold to a temp directory.
 Copy its tools/, checks/, CONVENTIONS.yaml, and CLAUDE.md into this project
 without overwriting any existing files. Run python3 tools/init_project.py
-to create the project structure (BUS/, orchestrator/, MANIFEST.yaml,
-GRAPH.yaml). Then analyze my codebase and create ANMA contracts for each
-module you find using python3 tools/new_module.py with --domain. Create
-GATEWAY.yaml for each domain. Match the contracts to the actual interfaces,
-dependencies, and error types in the code. Run python3 tools/sync_all.py
-then python3 tools/lint_contracts.py to verify 0 errors.
+to create the project structure. Then analyze my codebase and create ANMA
+contracts for each module you find using python3 tools/new_module.py with
+--domain. Create GATEWAY.yaml for each domain. Match the contracts to the
+actual interfaces, dependencies, and error types in the code. Run
+python3 tools/sync_all.py then python3 tools/lint_contracts.py to verify.
 ```
 
-Claude reads your source, creates contracts that match your existing architecture, and sets up the tooling. From this point on, every future session reads contracts first instead of re-inferring your architecture from source files.
+From this point on, every future session reads contracts first — no more re-inferring architecture from source files.
 
----
+## Why ANMA
 
-## Quickstart
+If you're shipping with Claude Code, you've hit these problems:
 
-Choose the workflow that matches how much control you want.
+**"Read the codebase first"** — Every new session re-reads your entire project. At 50+ files, that's thousands of tokens before any work begins. ANMA contracts give Claude the full architecture in ~350 tokens per module.
 
-| Path | Best for | Summary |
-|---|---|---|
-| **Path 1: Terminal** | Engineers using Claude Code | You manage the repo and use Claude Code to implement from contracts. |
-| **Path 2: Conversational** | Quick prototyping | Claude designs and implements the project in one conversation. |
+**"It broke my other module"** — Claude adds a feature and silently breaks another module's interface. ANMA's 24-check linter catches undeclared dependencies, missing error codes, and gateway violations before implementation starts.
 
-### Path 1: Terminal Workflow
+**"I can't run agents in parallel"** — Two Claude Code instances cause merge conflicts. ANMA's [claims system](docs/MULTI-AGENT.md) coordinates ownership, domain gateways prevent cross-boundary violations, and derived files regenerate automatically on merge.
 
-Clone the scaffold and install the only dependency:
+**"The architecture is in my head"** — You know the dependencies, but Claude doesn't. Every session you re-explain the same constraints. Contracts externalize those decisions into machine-readable files that every agent reads automatically.
 
-```bash
-git clone https://github.com/anma-labs/anma-scaffold my-project
-cd my-project
-pip install pyyaml
+## What a Contract Looks Like
+
+```yaml
+module: user-auth
+version: 1
+purpose: "Handle registration, login, and token verification"
+
+provides:
+  - id: register
+    input: { email: string, password: string }
+    output: { user_id: uuid }
+    errors: [EMAIL_TAKEN, WEAK_PASSWORD]
+    invariants:
+      - "auto-sends verification email"
+      - "publishes user_registered event via BUS"
+
+consumes:
+  - module: notifications
+    interface: send_email
 ```
 
-Ask Claude to draft contracts from `CLAUDE.md`, `CONVENTIONS.yaml`, and your project description. Then import and validate them:
+~350 tokens. Claude reads this instead of 500+ lines of source code and knows every interface, dependency, error type, and behavioral invariant.
 
-```bash
-python3 tools/init_project.py
-python3 tools/import_contracts.py ~/Downloads/*-CONTRACT.yaml
-```
-
-Target **0 errors** before implementation. Then run Claude Code:
-
-```bash
-claude
-```
-
-Prompt it to implement from the contracts:
-
-```text
-Read all module contracts and implement them.
-```
-
-If implementation reveals a missing dependency, missing error code, or unclear invariant, revise the contract and re-import it:
-
-```bash
-python3 tools/import_contracts.py revised-CONTRACT.yaml --force
-```
-
-Contract gaps are not failures. They are ANMA catching integration problems before they become silent runtime bugs.
-
-### Path 2: Conversational Workflow
-
-Open [Claude](https://claude.ai) with Claude Opus 4.6+. Upload any product specs, design docs, wireframes, research files, or reference material, then start with:
-
-```text
-Clone https://github.com/anma-labs/anma-scaffold and read CLAUDE.md and CONVENTIONS.yaml.
-Let me know when you're ready to build a project with me.
-```
-
-Claude reads the architecture rules and becomes your contract architect. Then describe what you want to build:
-
-```text
-I want to build a URL shortener. Users create API keys, shorten URLs with
-custom slugs, track clicks with analytics, and use rate limiting.
-```
-
-Claude identifies module boundaries, drafts contracts, defines interfaces, declares errors, and captures invariants. When the contracts look right, continue with:
-
-```text
-Set up the project and implement all modules.
-```
-
-When implementation is complete:
-
-```text
-Create app.py that wires all modules together.
-```
-
----
-
-## Working Over Time
-
-ANMA is useful after the first implementation, not just during project setup.
-
-To add a feature months later, describe the change normally:
-
-```text
-I want to add a waitlist to my event RSVP project. When an event is full,
-guests join a queue and get notified when a spot opens.
-```
-
-Claude reads the existing contracts, understands how the current modules fit together, updates the relevant contracts, and implements the change without guessing at hidden interfaces.
-
-To resume after a break, start Claude Code again and say:
-
-```text
-Continue where we left off.
-```
-
-Claude can recover from `STATE.yaml`, `MEMORY.yaml`, and the existing contracts instead of needing you to re-explain the project from scratch.
-
-### Parallel AI Work
-
-ANMA also fits naturally with Claude Code's dynamic workflows. Because each module has its own contract, state, and assumptions, Claude can split larger builds into module-sized implementation tasks instead of forcing one long sequential pass.
-
-For larger projects, you can ask Claude Code to design the contracts first, then parallelize implementation across subagents:
-
-```text
-Read CLAUDE.md and CONVENTIONS.yaml. I want to build [description].
-
-Design the contracts first. Then create a dynamic workflow where each
-subagent implements one module from its contract. Each subagent should
-read CLAUDE.md and CONVENTIONS.yaml plus its assigned contract. After
-all modules are implemented, run the linter and verify everything integrates.
-```
-
-For teams running multiple agents on the same repo, use claims to coordinate:
-
-```bash
-anma claim user-auth payments       # reserve modules before launching agents
-anma claims                          # see who owns what
-anma release user-auth payments     # release when done
-```
-
-For most projects, keep this simple: use dynamic workflows when the project has multiple independent modules, and always run the ANMA linter before merging changes.
-
----
-
-## Project Structure
-
-Each ANMA module is a directory with six small files. An agent usually needs only `CONTRACT.yaml`, `STATE.yaml`, and `MEMORY.yaml` to recover module context.
+## How It Works
 
 ```text
 your-project/
-  CONVENTIONS.yaml      # Universal rules: naming, errors, budgets, architecture
-  MANIFEST.yaml         # Module registry with status and ownership
-  GRAPH.yaml            # Auto-generated dependency graph
-  CLAUDE.md             # Agent instructions auto-read by Claude Code
-
-  modules/
-    user-auth/
-      CONTRACT.yaml     # What this module provides and consumes
-      STATE.yaml        # Current work status and blockers
-      MEMORY.yaml       # Short institutional memory
-      CHANGELOG.yaml    # Version history
-      TESTS.yaml        # Contract-derived test cases
-      ASSUMPTIONS.yaml  # Implementation details outside the contract
-
-  BUS/                  # Async inter-module communication
-  tools/                # Scripts for linting, scaffolding, and analysis
-```
-
-For larger projects, Claude organizes modules into domains with gateway-controlled boundaries:
-
-```text
-your-project/
+  CLAUDE.md                  ← agent instructions (read first every session)
+  CONVENTIONS.yaml           ← rules all contracts follow
+  MANIFEST.yaml              ← module registry with ownership
+  GRAPH.yaml                 ← auto-generated dependency graph
   domains/
     backend/
-      GATEWAY.yaml        # Declares which interfaces other domains can use
+      GATEWAY.yaml           ← declares public interfaces for this domain
       user-auth/
+        CONTRACT.yaml        ← what the module does (interfaces, deps, errors)
+        STATE.yaml           ← current status and work-in-progress
+        TESTS.yaml           ← auto-generated test cases from contract
       payments/
+        ...
     frontend/
       GATEWAY.yaml
       web-ui/
+        ...
+  tools/                     ← 28 Python tools (linter, scaffolding, analysis)
 ```
 
-Contracts define **what the code must do**. Assumptions describe **how the current implementation does it**. That separation lets you replace implementation details without breaking dependent modules.
+**Contracts** describe what modules do. **Domains** group related modules. **Gateways** control which interfaces are visible across domains. The **linter** enforces all of it — 24 structural checks plus 7 architectural principles.
 
-Contracts move through a simple lifecycle:
+## Benchmarks
 
-```text
-draft → stable → frozen
-```
+We built 3 projects (4, 8, and 12 modules) with and without ANMA, then added features to each. Key findings:
 
-Frozen contracts can only be extended, not modified, which protects modules that already depend on them.
+| | Control | ANMA |
+|---|---:|---:|
+| Runs correctly first try | 5/6 | 6/6 |
+| Tests generated (8-module project) | 42 | 75 |
+| Declared interfaces (12-module project) | 0 | 36 |
+| BUS event connections | 0 | 17 |
+| Architecture documentation | 0 lines | 1,000+ lines |
 
----
+ANMA costs 1.3–1.7x more on the first build. Adding features later costs the same. The advantage is architectural visibility that compounds across sessions.
+
+Full benchmark data, methodology, and demo repos: **[docs/BENCHMARKS.md](docs/BENCHMARKS.md)**
 
 ## CLI Tools
 
 ```bash
-python3 tools/anma.py init                       # Clear examples and start fresh
-python3 tools/anma.py import contracts/*.yaml    # Import contract files
-python3 tools/anma.py lint                       # Validate contracts
-python3 tools/anma.py lint --strict              # Require zero warnings
-python3 tools/anma.py module add billing         # Scaffold a new module
-python3 tools/anma.py graph                      # Regenerate dependency graph
-python3 tools/anma.py dashboard                  # Show project health
-python3 tools/anma.py impact user-auth           # Show what changes if auth changes
+anma lint --strict          # 24-check linter + 7 principle checks
+anma module add <name>      # scaffold a new module
+anma module remove <name>   # remove with dependency checks
+anma sync                   # regenerate derived files (incremental by default)
+anma claim <modules>        # reserve modules for parallel agent work
+anma claims                 # see who owns what
+anma release <modules>      # release when done
+anma dashboard              # project overview
 ```
 
-Run the full CLI help:
-
-```bash
-python3 tools/anma.py
-```
-
-Standalone scripts are also available, for example:
-
-```bash
-python3 tools/lint_contracts.py
-```
-
----
-
-## Real-World Results
-
-We built 3 projects three ways each — without ANMA, with ANMA (sequential), and with ANMA + dynamic workflows. Then we added a feature to each project to measure what happens across sessions.
-
-### First build: 3 projects, 9 builds
-
-| | Control | ANMA Sequential | ANMA + Dynamic Workflows |
-|---|---:|---:|---:|
-| **Project 1: Finance Tracker (4 modules)** | | | |
-| Cost | $1.30 | $1.69 | $3.16 |
-| API time | 6m 1s | 6m 32s | 15m 26s |
-| Runs first try | No | Yes | Yes |
-| Tests | 32 | 35 | 25 |
-| **Project 2: Task Manager (8 modules)** | | | |
-| Cost | $1.53 | $2.40 | $8.64 |
-| API time | 7m 28s | 11m 29s | 31m 32s |
-| Runs first try | Yes | Yes | Yes |
-| Tests | 42 | 75 | 60 |
-| **Project 3: E-commerce (12 modules, 3 domains)** | | | |
-| Cost | $2.00 | $3.39 | $5.36 |
-| API time | 6m 45s | 12m 24s | 22m 36s |
-| Runs first try | Yes | Yes | Yes |
-| Tests | 42 | 35 | 29 |
-
-### Adding a feature later: Control vs ANMA Sequential
-
-| | Control | ANMA Sequential |
-|---|---:|---:|
-| **Project 1: Add recurring transactions** | | |
-| Cost | $0.68 | $0.83 |
-| API time | 2m 18s | 3m 29s |
-| New tests added | 24 | 27 |
-| Total tests after | 56 | 62 |
-| **Project 2: Add task templates** | | |
-| Cost | $0.88 | $0.87 |
-| API time | 3m 47s | 3m 46s |
-| New tests added | 21 | 22 |
-| Total tests after | 63 | 97 |
-| **Project 3: Add wishlists** | | |
-| Cost | $0.65 | $1.17 |
-| API time | 2m 10s | 4m 5s |
-| New tests added | 14 | 15 |
-| Total tests after | 56 | 50 |
-
-All builds used Claude Opus 4.6 on Claude Max. Costs reflect API pricing, not subscription.
-
-### What the data shows
-
-**ANMA costs more on the first build.** 1.3–1.7x for sequential, 2.4–3.6x for dynamic workflows. Designing contracts before implementation adds overhead.
-
-**Adding features costs the same.** Once the project exists, ANMA and control builds are comparable in cost and speed. Prompt caching means both approaches pay similar token costs.
-
-**ANMA runs correctly on first try.** The control failed on Project 1 (wrong entry point, manual fix needed). All 6 ANMA builds started correctly on first attempt.
-
-**ANMA produces more thorough test coverage.** After two rounds of development, the ANMA Task Manager has 97 tests vs the control's 63 — 54% more coverage from identical prompts. The gap comes from contracts making interface boundaries explicit, which gives the agent clearer test targets.
-
-**ANMA produces architecture, not just code.** Every ANMA build generates contracts, dependency graphs, BUS event wiring, and domain boundaries that persist across sessions. The control produces working code with no architectural documentation. When the wishlist feature needed price-drop notifications, the ANMA version used its existing BUS event system. The control manually wired the logic into the products router.
-
-### Where ANMA pays for itself
-
-ANMA is not a tool for saving tokens or building faster. It is a tool for building correctly.
-
-The compounding advantage is architectural visibility. Every interface, dependency, invariant, and domain boundary is declared in machine-readable contracts — not buried in source code. The linter enforces those declarations, so violations are caught before implementation. And the contracts persist across sessions, so no future agent or team member has to reverse-engineer the architecture from scratch.
-
-Measured on the 12-module e-commerce benchmark (control vs ANMA Sequential):
-
-| What a new session gets | Control | ANMA |
-|---|---:|---:|
-| Declared interfaces | 0 | 36 |
-| Declared dependencies | 0 | 9 |
-| Declared invariants | 0 | 47 |
-| Domain gateways | 0 | 3 |
-| BUS event connections | 0 | 17 |
-| Architecture documentation (lines) | 0 | 1,000+ |
-
-The control produces code and nothing else. Every architectural decision lives only in the source files and must be re-inferred by every future session. ANMA externalizes those decisions into machine-readable contracts that any agent or developer can read without opening a single source file.
-
-Compare any two projects yourself with the included tool:
-
-```bash
-python3 tools/benchmark/compare_quality.py /path/to/control /path/to/anma
-```
-
-Inspect the benchmark projects yourself:
-- [Finance Tracker](https://github.com/anma-labs/anma-demo-finance-tracker) — 4 modules
-- [Task Manager](https://github.com/anma-labs/anma-demo-task-manager) — 8 modules, BUS events
-- [E-commerce Backend](https://github.com/anma-labs/anma-demo-ecommerce) — 12 modules, 3 domains, GATEWAY enforcement
-
----
+Full tool reference: **[docs/WORKFLOWS.md](docs/WORKFLOWS.md)**
 
 ## FAQ
 
-### How is ANMA different from OpenAPI or Swagger?
+**How is ANMA different from OpenAPI or Swagger?**
+OpenAPI describes HTTP endpoints. ANMA describes module behavior — interfaces, dependencies, error types, invariants, and BUS events. It's an architecture contract, not an API spec.
 
-OpenAPI describes HTTP endpoints. ANMA describes internal module boundaries: interfaces, invariants, errors, dependencies, state, memory, assumptions, and change impact. Use OpenAPI for your public API and ANMA for your internal architecture.
+**Do I have to use Claude?**
+The contracts are plain YAML. Any LLM can read them. The tooling runs with standard Python. Claude Code is recommended because CLAUDE.md is optimized for it.
 
-### Do I have to use Claude?
+**Is ANMA a framework?**
+No. It's a set of conventions and a linter. There's no runtime, no imports, no lock-in. Delete the tools/ directory and your code still runs.
 
-The full workflow is built and tested for Claude Code. The contract format is plain YAML, so other LLMs can read it, but the end-to-end workflow is optimized for Claude Code.
-
-### Is this just documentation?
-
-No. Documentation describes what code does. ANMA contracts prescribe what code must do. Because contracts are machine-readable and linted, they can break the build when interfaces, errors, dependencies, or invariants are inconsistent.
-
-### Is ANMA a framework?
-
-No. ANMA is a convention plus a set of scripts. It does not replace your web framework, database, runtime, or deployment stack.
-
-### What is ANMA probably overkill for?
-
-Single-file scripts, throwaway prototypes, and projects where you don't use AI agents for implementation. If you write all the code yourself and never plan to use Claude Code or similar tools, ANMA's contracts add overhead without payoff.
-
----
+**What is ANMA overkill for?**
+Single-file scripts, throwaway prototypes, and projects where you don't use AI agents for implementation. If you write all the code yourself, contracts add overhead without payoff.
 
 ## Requirements
 
-- Python 3.8+
-- PyYAML
-
-Install PyYAML:
-
-```bash
-pip install pyyaml
-```
-
-Optional: `pip install tiktoken` for accurate token counting (falls back to estimate otherwise).
-
----
+- Python 3.10+
+- `pip install pyyaml`
+- Optional: `pip install tiktoken` for accurate token counting (falls back to estimate)
 
 ## Documentation
 
-- [Architecture Overview](docs/ARCHITECTURE.md) — the 7 design principles
-- [Contract Guide](docs/CONTRACT-GUIDE.md) — writing effective contracts
-- [Quickstart Guide](docs/QUICKSTART.md) — detailed setup walkthrough
-
----
+| Doc | Description |
+|---|---|
+| [CLAUDE.md](CLAUDE.md) | Agent instructions — read by Claude every session |
+| [CONVENTIONS.yaml](CONVENTIONS.yaml) | Rules all contracts follow |
+| [docs/QUICKSTART.md](docs/QUICKSTART.md) | Step-by-step first project guide |
+| [docs/WORKFLOWS.md](docs/WORKFLOWS.md) | Detailed terminal and conversational workflows |
+| [docs/MULTI-AGENT.md](docs/MULTI-AGENT.md) | Parallel agents, claims, dynamic workflows |
+| [docs/BENCHMARKS.md](docs/BENCHMARKS.md) | Full benchmark data and demo repos |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 7 principles and design rationale |
+| [docs/CONTRACT-GUIDE.md](docs/CONTRACT-GUIDE.md) | How to write good contracts |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
+See [CONTRIBUTING.md](CONTRIBUTING.md). All PRs must pass `python3 tools/lint_contracts.py --strict` and `python3 -m unittest tools.test_linter`.
