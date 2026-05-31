@@ -34,6 +34,7 @@ def write_contract(path, name, mod_type, purpose, consumes):
     lines = [
         f"module: {name}",
         "version: 1",
+        "conventions_version: 3",
         "status: draft",
         f"type: {mod_type}",
         "",
