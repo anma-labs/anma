@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from lint_contracts import parse_yaml_file
+from yaml_utils import parse_yaml_file
 from discover import discover_modules
 
 

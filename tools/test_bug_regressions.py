@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from lint_contracts import parse_yaml_file, parse_yaml
+from yaml_utils import parse_yaml_file, parse_yaml
 from claims import _save_claims, _load_claims
 
 TOOLS_DIR = Path(__file__).parent

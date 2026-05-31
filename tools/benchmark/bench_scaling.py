@@ -22,7 +22,7 @@ PROJECT_ROOT = TOOLS_DIR.parent
 sys.path.insert(0, str(TOOLS_DIR))
 from discover import discover_modules, discover_domains, get_module_domain
 from claims import add_claim, get_claim, release_claim, _load_claims, _save_claims
-from lint_contracts import parse_yaml_file
+from yaml_utils import parse_yaml_file
 
 py = sys.executable
 passed = 0

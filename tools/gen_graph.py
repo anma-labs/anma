@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 def generate_graph(root, contracts=None):
     """Build graph data from all CONTRACT consumes fields."""
     if contracts is None:
-        from lint_contracts import load_all_contracts
+        from yaml_utils import load_all_contracts
         contracts = load_all_contracts(root)
 
     # Build consumes and consumed_by

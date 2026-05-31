@@ -32,7 +32,7 @@ def build_consumer_map(root):
     graph_file = root / 'GRAPH.yaml'
     if not graph_file.exists():
         return {}
-    from lint_contracts import parse_yaml_file
+    from yaml_utils import parse_yaml_file
     graph = parse_yaml_file(str(graph_file))
     if not graph or not isinstance(graph.get('modules'), dict):
         return {}

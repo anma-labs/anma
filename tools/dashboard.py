@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from lint_contracts import parse_yaml_file, load_all_contracts, load_conventions
+from yaml_utils import parse_yaml_file, load_all_contracts, load_conventions
 from discover import discover_modules
 from tokenizer import count_tokens
 

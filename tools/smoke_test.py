@@ -53,12 +53,13 @@ def copy_scaffold(dest):
     for f in ['lint_contracts.py', 'new_module.py', 'gen_claude_md.py',
               'gen_graph.py', 'graph_viz.py', 'verify_contract.py',
               'compat_matrix.py', 'bus_archive.py', 'test_linter.py',
-              'yaml_editor.py', 'session_log.py', 'new_manager.py',
-              'remove_module.py', 'rename_project.py', 'gen_contract.py',
-              'gen_product_spec.py', 'dashboard.py', 'plan_migration.py',
-              'anma.py', 'gen_tests.py', 'impact.py', 'contract_diff.py',
-              'discover.py', 'sync_all.py', 'import_contracts.py',
-              'init_project.py', 'smoke_test.py', 'tokenizer.py']:
+              'yaml_editor.py', 'yaml_utils.py', 'session_log.py',
+              'new_manager.py', 'remove_module.py', 'rename_project.py',
+              'gen_contract.py', 'gen_product_spec.py', 'dashboard.py',
+              'plan_migration.py', 'anma.py', 'gen_tests.py', 'impact.py',
+              'contract_diff.py', 'discover.py', 'sync_all.py',
+              'import_contracts.py', 'init_project.py', 'smoke_test.py',
+              'tokenizer.py']:
         src = TOOLS_DIR / f
         if src.exists():
             shutil.copy2(str(src), str(dest / f))

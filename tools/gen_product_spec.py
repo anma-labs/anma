@@ -88,7 +88,7 @@ def contract_to_spec(mod_name, contract):
 
 def generate_full_spec(root, module_filter=None):
     """Generate the complete product spec."""
-    from lint_contracts import parse_yaml_file, load_all_contracts
+    from yaml_utils import parse_yaml_file, load_all_contracts
     contracts = load_all_contracts(root)
     manifest = parse_yaml_file(str(root / 'MANIFEST.yaml')) or {}
     project = manifest.get('project', 'Unknown Project')

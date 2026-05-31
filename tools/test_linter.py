@@ -16,9 +16,10 @@ from pathlib import Path
 
 # Import linter
 sys.path.insert(0, str(Path(__file__).parent))
+from yaml_utils import parse_yaml, parse_yaml_file, load_all_contracts, load_conventions
 from lint_contracts import (
-    LintResult, parse_yaml, parse_yaml_file,
-    load_all_contracts, load_graph, load_conventions, load_manifest,
+    LintResult,
+    load_graph, load_manifest,
     check_cross_references, check_graph_consistency,
     check_naming_conventions, check_circular_dependencies,
     check_contract_structure, check_manifest_consistency,

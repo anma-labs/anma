@@ -222,7 +222,7 @@ def generate_contract(name, purpose, consumes, mod_type, root=None, force_patter
             # Try to look up the provider's interfaces
             iface_name = 'TBD'
             if root:
-                from lint_contracts import parse_yaml_file
+                from yaml_utils import parse_yaml_file
                 contract_path = module_paths.get(dep, root / 'modules' / dep) / 'CONTRACT.yaml'
                 if contract_path.exists():
                     dep_contract = parse_yaml_file(str(contract_path))

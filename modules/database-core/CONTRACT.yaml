@@ -1,0 +1,26 @@
+module: database-core
+version: 1
+conventions_version: 3
+status: draft
+type: regular
+
+purpose: "Core database access layer"
+
+provides: []
+# Example:
+#  - id: my_interface
+#    input: { key: string }
+#    output: { value: string }
+#    errors: [NOT_FOUND]
+#    invariants: ["returns NOT_FOUND for missing keys"]
+
+consumes: []
+
+constraints:
+  language: TBD
+  runtime: TBD
+
+contract_rules:
+  adding_interface: allowed
+  modifying_interface: notify
+  removing_interface: breaking

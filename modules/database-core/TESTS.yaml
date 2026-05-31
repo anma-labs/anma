@@ -1,0 +1,24 @@
+# Black-box contract tests.
+module: database-core
+tests: []
+# REQUIRED FIELDS: interface, case, input, expect
+# Tests are a FLAT list (not nested by interface).
+#
+# Example — happy path:
+#  - interface: get_item
+#    case: valid_id
+#    input: { item_id: "abc123" }
+#    expect: { has_keys: [item_id, name, status] }
+#
+# Example — error case:
+#  - interface: get_item
+#    case: not_found
+#    input: { item_id: "nonexistent" }
+#    expect: { error: ITEM_NOT_FOUND }
+#
+# Example — with precondition:
+#  - interface: login
+#    case: account_locked
+#    input: { email: "user@test.com", password: "wrong" }
+#    precondition: "5 failed attempts within 15 min"
+#    expect: { error: ACCOUNT_LOCKED }

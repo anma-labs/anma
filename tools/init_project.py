@@ -51,7 +51,7 @@ def init_project(root):
     # Reset MANIFEST.yaml — keep project name and version, clear modules
     manifest_path = root / 'MANIFEST.yaml'
     if manifest_path.exists():
-        from lint_contracts import parse_yaml_file
+        from yaml_utils import parse_yaml_file
         data = parse_yaml_file(str(manifest_path))
         if data and isinstance(data, dict):
             project_name = data.get('project', 'my-project')

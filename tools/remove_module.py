@@ -5,7 +5,7 @@ Usage: python3 remove_module.py auth-service --confirm [--force]
 import argparse, os, shutil, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
-from lint_contracts import load_all_contracts, parse_yaml_file
+from yaml_utils import load_all_contracts, parse_yaml_file
 from discover import discover_modules
 
 def find_project_root(start='.'):

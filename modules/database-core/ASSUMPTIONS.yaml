@@ -1,0 +1,7 @@
+# Implementation assumptions not captured in CONTRACT.
+module: database-core
+assumptions: []
+# Example:
+#  - id: A001
+#    category: data
+#    content: "database supports transactions"
