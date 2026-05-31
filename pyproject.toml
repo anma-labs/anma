@@ -4,10 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "anma-scaffold"
-version = "0.1.0"
+version = "0.3.0"
 description = "AI-Native Modular Architecture — contract-driven scaffold for AI agents"
 requires-python = ">=3.10"
+license = "Apache-2.0"
+readme = "README.md"
+keywords = ["ai", "architecture", "contracts", "claude", "agents"]
 dependencies = ["pyyaml"]
+
+[project.urls]
+Homepage = "https://github.com/anma-labs/anma-scaffold"
+Documentation = "https://github.com/anma-labs/anma-scaffold"
+Changelog = "https://github.com/anma-labs/anma-scaffold"
+Issues = "https://github.com/anma-labs/anma-scaffold"
 
 [project.optional-dependencies]
 tokens = ["tiktoken"]

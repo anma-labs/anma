@@ -108,7 +108,7 @@ def main() -> None:
 
     # Clean up using yaml_editor
     from yaml_editor import manifest_remove_module, graph_remove_module, scope_remove_module
-    
+
     manifest_remove_module(root, name)
     messages.append(f"  Removed '{name}' from MANIFEST")
 

@@ -137,9 +137,9 @@ Agents read these files first, in order, on every task:
 1. `CONVENTIONS.yaml` — universal rules
 2. `MANIFEST.yaml` — what modules exist
 3. `GRAPH.yaml` — how they connect
-4. `modules/<module>/CONTRACT.yaml` — the interface spec
-5. `modules/<module>/STATE.yaml` — current status
-6. `modules/<module>/MEMORY.yaml` — accumulated knowledge
+4. `domains/<domain>/<module>/CONTRACT.yaml` — the interface spec
+5. `domains/<domain>/<module>/STATE.yaml` — current status
+6. `domains/<domain>/<module>/MEMORY.yaml` — accumulated knowledge
 
 Agents don't skip steps. Agents don't read source before contracts.
 
