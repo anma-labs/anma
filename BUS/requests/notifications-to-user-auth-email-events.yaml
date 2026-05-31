@@ -1,7 +1,0 @@
-id: req-001
-from: notifications
-to: user-auth
-status: open
-priority: medium
-request: "Publish BUS event when email_verified changes so notifications can update channel availability"
-created: 2026-05-23T00:00:00Z
