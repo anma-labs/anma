@@ -27,7 +27,7 @@ exist in the schema. Copy this template when drafting a new contract:
 ```yaml
 module: module-name              # kebab-case, matches the directory name
 version: 1                       # integer, bump on breaking changes
-conventions_version: 2           # pin to the current CONVENTIONS.yaml version
+conventions_version: 3           # pin to the current CONVENTIONS.yaml version
 status: draft                    # draft | stable | frozen | breaking-change | deprecated
 type: regular                    # regular | infrastructure (infra must be frozen)
 purpose: "One-line description of what this module does"

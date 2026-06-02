@@ -20,7 +20,7 @@ cd my-project
 python3 tools/lint_contracts.py
 ```
 
-Three example modules checked, 0 errors. Browse `modules/user-auth/CONTRACT.yaml` to see a full contract.
+Three example modules checked, 0 errors. Browse `domains/core/user-auth/CONTRACT.yaml` to see a full contract.
 
 ## Step 3: Design your contracts
 

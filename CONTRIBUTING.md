@@ -28,7 +28,7 @@ Open an issue first. Describe what you want to change and why. This avoids dupli
 
 ### Python scripts (tools/)
 
-- Python 3.8+ compatible
+- Python 3.10+ compatible
 - No external dependencies beyond PyYAML
 - Include docstrings for public functions
 - Run `python3 tools/test_linter.py` to verify linter changes
