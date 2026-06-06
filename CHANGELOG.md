@@ -7,6 +7,16 @@ All notable changes to ANMA are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.5.6] — 2026-06-06
+
+### Fixed
+- README doc links are now absolute GitHub URLs so they resolve on the PyPI
+  project page (relative links rendered as dead text there, hiding the benchmark
+  study and quickstart from readers who land on PyPI first).
+- Package `description` metadata updated to the current positioning ("Boundary
+  enforcement for AI coding agents…"); the old summary still described the
+  pre-pivot framing.
+
 ## [0.5.5] — 2026-06-06
 
 ### Fixed

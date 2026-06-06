@@ -7,7 +7,7 @@ your architecture — and it measurably works where it matters most.
 In a controlled benchmark, a cheaper/faster model (Claude Haiku 4.5) violated a
 declared module boundary in **13 of 19** runs of a plain repo. With ANMA, across
 20 runs of the same task it violated it **0 times** (Fisher's exact `p < 0.0001`).
-See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for the full study, including the
+See [docs/BENCHMARKS.md](https://github.com/anma-labs/anma/blob/main/docs/BENCHMARKS.md) for the full study, including the
 honest part: a frontier model (Opus 4.8) respected the boundary on its own, so
 ANMA's value is **insurance for running cheaper agents** plus a CI/governance
 guarantee — not making a frontier model smarter.
@@ -40,7 +40,7 @@ anma sync                   # generates CLAUDE.md, nested docs, hooks, tach.toml
 anma check                  # ✓ boundaries respected
 ```
 
-Full walkthrough: [docs/QUICKSTART.md](docs/QUICKSTART.md).
+Full walkthrough: [docs/QUICKSTART.md](https://github.com/anma-labs/anma/blob/main/docs/QUICKSTART.md).
 
 ## Commands
 
@@ -100,14 +100,14 @@ team can read the whole tool in an afternoon.
 - **Governance** — `owners:` per module generates `CODEOWNERS`; `source_roots:`
   supports monorepos.
 - **Supply chain** — signed releases (PyPI Trusted Publishing + provenance + SBOM),
-  `pip-audit` in CI, Apache-2.0. See [SECURITY.md](SECURITY.md).
+  `pip-audit` in CI, Apache-2.0. See [SECURITY.md](https://github.com/anma-labs/anma/blob/main/SECURITY.md).
 
 ## Documentation
 
-- [docs/QUICKSTART.md](docs/QUICKSTART.md) — install to first blocked edit
-- [docs/CONCEPTS.md](docs/CONCEPTS.md) — the model, the **contract schema reference**, generated artifacts, the engine
-- [docs/BENCHMARKS.md](docs/BENCHMARKS.md) — the with/without study, methodology, and honest limits
-- [CONTRIBUTING.md](CONTRIBUTING.md) — dev setup, tests, the dogfood, the schema-stability rule
-- [SECURITY.md](SECURITY.md) · [RELEASE.md](RELEASE.md) · [CHANGELOG.md](CHANGELOG.md)
+- [docs/QUICKSTART.md](https://github.com/anma-labs/anma/blob/main/docs/QUICKSTART.md) — install to first blocked edit
+- [docs/CONCEPTS.md](https://github.com/anma-labs/anma/blob/main/docs/CONCEPTS.md) — the model, the **contract schema reference**, generated artifacts, the engine
+- [docs/BENCHMARKS.md](https://github.com/anma-labs/anma/blob/main/docs/BENCHMARKS.md) — the with/without study, methodology, and honest limits
+- [CONTRIBUTING.md](https://github.com/anma-labs/anma/blob/main/CONTRIBUTING.md) — dev setup, tests, the dogfood, the schema-stability rule
+- [SECURITY.md](https://github.com/anma-labs/anma/blob/main/SECURITY.md) · [RELEASE.md](https://github.com/anma-labs/anma/blob/main/RELEASE.md) · [CHANGELOG.md](https://github.com/anma-labs/anma/blob/main/CHANGELOG.md)
 
 Apache-2.0 · ANMA Labs LLC
