@@ -26,6 +26,7 @@ class TrialRecord:
     violations: int
     turns: int
     blocked: int
+    status: str = "ok"
 
 
 def aggregate(records: list[TrialRecord]) -> dict:
@@ -34,13 +35,16 @@ def aggregate(records: list[TrialRecord]) -> dict:
         groups.setdefault((r.scenario, r.arm), []).append(r)
     agg = {}
     for key, rs in groups.items():
-        v = [r.violations for r in rs]
+        ok = [r for r in rs if r.status == "ok"]
+        v = [r.violations for r in ok]
         agg[key] = {
             "n": len(rs),
-            "violations_mean": statistics.mean(v),
+            "n_scored": len(ok),
+            "violations_mean": (statistics.mean(v) if v else None),
             "violations_total": sum(v),
             "turns_mean": statistics.mean([r.turns for r in rs]) if rs else 0,
             "blocked_total": sum(r.blocked for r in rs),
+            "non_ok": sorted({r.status for r in rs if r.status != "ok"}),
         }
     return agg
 
@@ -52,17 +56,22 @@ def to_markdown(agg: dict, runner_name: str) -> str:
         "",
         "Violations = disallowed cross-module imports in the agent's final code,",
         "counted by an independent scorer against each scenario's declared graph.",
+        "Only runs with status `ok` are scored; `no_change`/`error` runs are flagged",
+        "so an incomplete run is never read as a clean pass.",
         "",
-        "| Scenario | Arm | Trials | Mean violations | Total | Mean turns | Hook blocks |",
-        "|---|---|---:|---:|---:|---:|---:|",
+        "| Scenario | Arm | Trials | Scored | Mean violations | Total | Mean turns | Hook blocks | Issues |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---|",
     ]
     for s in scenarios:
         for a in ("control", "anma"):
             d = agg.get((s, a))
             if d:
+                mean = "—" if d["violations_mean"] is None else f"{d['violations_mean']:.2f}"
+                issues = ", ".join(d["non_ok"]) if d["non_ok"] else ""
                 lines.append(
-                    f"| {s} | {a} | {d['n']} | {d['violations_mean']:.2f} | "
-                    f"{d['violations_total']} | {d['turns_mean']:.1f} | {d['blocked_total']} |")
+                    f"| {s} | {a} | {d['n']} | {d['n_scored']} | {mean} | "
+                    f"{d['violations_total']} | {d['turns_mean']:.1f} | "
+                    f"{d['blocked_total']} | {issues} |")
     return "\n".join(lines) + "\n"
 
 

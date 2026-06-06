@@ -45,9 +45,12 @@ def main(argv: list[str] | None = None) -> int:
             for t in range(a.trials):
                 res = runner.run(arm_dir, task, arm)
                 v = count_violations(res.workdir, spec)
-                records.append(TrialRecord(spath.name, arm, t, len(v), res.turns, res.blocked))
+                records.append(TrialRecord(spath.name, arm, t, len(v),
+                                           res.turns, res.blocked, res.status))
+                flag = "" if res.status == "ok" else f"  <{res.status}>"
                 print(f"  {spath.name}/{arm} trial {t}: "
-                      f"{len(v)} violation(s), {res.blocked} hook block(s)")
+                      f"{len(v)} violation(s), {res.blocked} hook block(s), "
+                      f"{res.turns} turns{flag}")
 
     agg = aggregate(records)
     out = Path(a.out)

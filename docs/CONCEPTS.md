@@ -29,7 +29,7 @@ discovered by scanning each source root.
 |---|---|---|
 | `name` | str | Logical module name. Required (its presence marks a module). |
 | `summary` | str | One line; shown in the generated architecture map. |
-| `public` | list[str] | The module's interface surface — the only symbols other modules may import. Enforced at interface level by the `tach` engine. |
+| `public` | list[str] | The module's interface surface — the only symbols other modules may import. Write members relative to the module name (`accounts.service.x`); ANMA qualifies them to the import path in `tach.toml`. Enforced at interface level by the `tach` engine. |
 | `depends_on` | list[str] | Module names this module may import. Anything else is a violation. |
 | `deprecated_deps` | list[str] | Allowed-but-warned dependencies. Surfaced as warnings (exit 0) for incremental adoption. |
 | `invariants` | list[str] | Free-text rules an agent must not break; rendered into the module's `CLAUDE.md`. |

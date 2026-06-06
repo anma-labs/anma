@@ -7,6 +7,33 @@ All notable changes to ANMA are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-06-06
+
+Fixes from the first live `claude-code` benchmark run, which surfaced two real
+enforcement bugs and a harness that mis-scored blocked runs.
+
+### Fixed
+- **Hook now judges the proposed edit, not the project's current state.** The
+  PreToolUse hook reconstructs the post-edit content and blocks (exit 2) only
+  when *that edit* introduces a new disallowed import. This fixes a deadlock
+  (a project red for any reason blocked every edit, including the fix) and makes
+  the headline claim true (a violating edit is blocked as it is made, not on the
+  next edit). Hook logic moved into the package (`anma.hook`) so it is tested and
+  upgradable via `pip install -U`; the generated hook is a thin shim that fails
+  open with a warning if `anma` isn't importable.
+- **`anma sync` now qualifies `public` interface paths** to the module's import
+  path in `tach.toml` (e.g. `accounts.service.get_user` →
+  `domains.accounts.service.get_user`). Previously these were emitted verbatim,
+  so `tach check` failed out of the box for any module nested under a source
+  root. (The single-module-at-root dogfood had masked this.)
+
+### Changed
+- Benchmark harness parses `claude --output-format json`: real `num_turns`, hook
+  blocks counted from `permission_denials`, and a per-trial `status`
+  (`ok`/`no_change`/`error`). Runs that changed no code or errored are flagged
+  and excluded from violation scoring, so an incomplete run can no longer be read
+  as a clean pass.
+
 ## [0.5.0] — 2026-06-05
 
 Ground-up rewrite around a single goal: *with ANMA, Claude Code makes fewer

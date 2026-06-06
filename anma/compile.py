@@ -37,12 +37,29 @@ def render_tach_toml(project: Project) -> str:
         deps = ", ".join(f'"{d}"' for d in _dep_import_paths(project, m))
         lines.append(f"depends_on = [{deps}]")
         if m.public:
-            members = ", ".join(f'"{p}"' for p in m.public)
+            members = ", ".join(f'"{_qualify(m, p)}"' for p in m.public)
             lines.append("[[interfaces]]")
             lines.append(f"expose = [{members}]")
             lines.append(f'from = ["{m.import_path}"]')
         lines.append("")
     return "\n".join(lines)
+
+
+def _qualify(m: ModuleContract, member: str) -> str:
+    """Resolve a public-interface member to a full import path.
+
+    Contracts name members relative to the module's logical name
+    (e.g. `accounts.service.get_user`); tach needs them against the module's
+    import path (e.g. `domains.accounts.service.get_user`). If the member is
+    already fully qualified, it is left unchanged.
+    """
+    if m.import_path == m.name:
+        return member
+    if member == m.name:
+        return m.import_path
+    if member.startswith(m.name + "."):
+        return m.import_path + member[len(m.name):]
+    return member
 
 
 def render_map_block(project: Project) -> str:

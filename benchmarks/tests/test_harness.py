@@ -60,3 +60,31 @@ def test_replay_pipeline_discriminates_arms(tmp_path):
     agg = data["aggregate"]
     assert agg["payments-boundary/control"]["violations_total"] >= 1
     assert agg["payments-boundary/anma"]["violations_total"] == 0
+
+
+def test_runner_flags_blocked_no_change_run(monkeypatch):
+    """A run that errored/blocked and changed nothing must NOT score as clean."""
+    import types, json as _json
+    import bench.runner as R
+
+    canned = _json.dumps({
+        "is_error": False, "num_turns": 25, "subtype": "success",
+        "permission_denials": [{"tool_name": "Edit"}],
+    })
+    monkeypatch.setattr(R.subprocess, "run",
+                        lambda *a, **k: types.SimpleNamespace(
+                            stdout=canned, stderr="", returncode=0))
+    arm = SCENARIOS / "payments-boundary" / "anma"
+    res = R.ClaudeCodeRunner().run(arm, "task", "anma")
+    assert res.turns == 25
+    assert res.blocked == 1          # the hook block, counted from permission_denials
+    assert res.status == "no_change" # nothing was modified -> not a clean pass
+
+
+def test_runner_marks_missing_cli_as_error(monkeypatch):
+    import bench.runner as R
+    def boom(*a, **k):
+        raise FileNotFoundError("claude")
+    monkeypatch.setattr(R.subprocess, "run", boom)
+    res = R.ClaudeCodeRunner().run(SCENARIOS / "payments-boundary" / "anma", "t", "anma")
+    assert res.status == "error"

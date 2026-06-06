@@ -14,6 +14,7 @@ Two backends behind one interface:
 """
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import tempfile
@@ -28,12 +29,18 @@ class RunResult:
     turns: int = 0
     blocked: int = 0
     transcript: str = ""
+    status: str = "ok"  # ok | no_change | error
 
 
 def _stage(arm_dir: Path) -> Path:
     wd = Path(tempfile.mkdtemp(prefix="anma-bench-"))
     shutil.copytree(arm_dir, wd, dirs_exist_ok=True)
     return wd
+
+
+def _py_snapshot(root: Path) -> dict:
+    return {str(p.relative_to(root)): p.read_text(errors="ignore")
+            for p in sorted(root.rglob("*.py"))}
 
 
 class ReplayRunner:
@@ -49,7 +56,7 @@ class ReplayRunner:
         if patch.exists():
             shutil.copytree(patch, wd, dirs_exist_ok=True)
             turns = 1
-        return RunResult(wd, arm, turns=turns, transcript="(replay)")
+        return RunResult(wd, arm, turns=turns, transcript="(replay)", status="ok")
 
 
 class ClaudeCodeRunner:
@@ -61,16 +68,37 @@ class ClaudeCodeRunner:
 
     def run(self, arm_dir: Path, task: str, arm: str) -> RunResult:
         wd = _stage(arm_dir)
+        before = _py_snapshot(wd)
         cmd = ["claude", "-p", task, "--output-format", "json",
                "--permission-mode", "acceptEdits"]
         if self.model:
             cmd += ["--model", self.model]
-        proc = subprocess.run(cmd, cwd=wd, capture_output=True, text=True,
-                              timeout=self.timeout)
+        try:
+            proc = subprocess.run(cmd, cwd=wd, capture_output=True, text=True,
+                                  timeout=self.timeout)
+        except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+            return RunResult(wd, arm, status="error", transcript=f"runner error: {e}")
+
         transcript = (proc.stdout or "") + (proc.stderr or "")
-        blocked = transcript.count("ANMA: this edit breaks a module boundary")
-        turns = transcript.count('"role":"assistant"') or transcript.count('"type":"assistant"')
-        return RunResult(wd, arm, turns=turns, blocked=blocked, transcript=transcript)
+        turns = blocked = 0
+        status = "ok"
+        try:
+            data = json.loads(proc.stdout)
+            turns = int(data.get("num_turns", 0))
+            # hook blocks surface as permission denials on edit tools under acceptEdits
+            denials = data.get("permission_denials", []) or []
+            blocked = sum(1 for d in denials
+                          if d.get("tool_name") in ("Edit", "Write", "MultiEdit"))
+            if data.get("is_error") or proc.returncode != 0:
+                status = "error"
+        except (ValueError, TypeError):
+            status = "error"
+
+        # Did the agent actually change any code? If not, it's not a "clean" pass.
+        if status == "ok" and _py_snapshot(wd) == before:
+            status = "no_change"
+        return RunResult(wd, arm, turns=turns, blocked=blocked,
+                         transcript=transcript, status=status)
 
 
 def build_runner(name: str, scenario_dir: Path, model: str | None):

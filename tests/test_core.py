@@ -180,3 +180,62 @@ def test_default_ignore_skips_node_modules(tmp_path):
     (nm / "anma.yaml").write_text("name: junk\nsummary: x\ndepends_on: []\n")
     names = {m.name for m in load_project(tmp_path).modules}
     assert "junk" not in names
+
+
+# ---- v0.5.1: hook judges the proposed edit; tach expose paths qualified ----
+import json as _json
+from anma.hook import run_hook, ALLOW, BLOCK
+
+
+def _payload(tool, file, **inp):
+    return _json.dumps({"tool_name": tool, "tool_input": {"file_path": str(file), **inp}})
+
+
+def test_hook_blocks_new_violation(project):
+    sync(project)
+    acc = project.root / "src/domains/accounts/service.py"
+    # accounts may not import billing
+    body = acc.read_text() + "\nfrom domains.billing.service import total_invoiced\n"
+    assert run_hook(_payload("Write", acc, content=body)) == BLOCK
+
+
+def test_hook_allows_clean_edit(project):
+    sync(project)
+    acc = project.root / "src/domains/accounts/service.py"
+    body = acc.read_text() + "\ndef extra():\n    return 1\n"
+    assert run_hook(_payload("Write", acc, content=body)) == ALLOW
+
+
+def test_hook_allows_allowed_direction(project):
+    sync(project)
+    bil = project.root / "src/domains/billing/service.py"
+    body = bil.read_text() + "\nfrom domains.accounts.service import get_user as g\n"
+    assert run_hook(_payload("Write", bil, content=body)) == ALLOW
+
+
+def test_hook_no_deadlock_on_preexisting_violation(project):
+    # file already violates on disk; an unrelated edit must NOT be blocked
+    sync(project)
+    acc = project.root / "src/domains/accounts/service.py"
+    acc.write_text(acc.read_text() + "\nfrom domains.billing.service import total_invoiced\n")
+    body = acc.read_text() + "\ndef unrelated():\n    return 2\n"  # keeps the bad import
+    assert run_hook(_payload("Write", acc, content=body)) == ALLOW
+
+
+def test_hook_allows_non_module_and_non_py(project):
+    sync(project)
+    assert run_hook(_payload("Write", project.root / "anma.yaml", content="x: 1")) == ALLOW
+    assert run_hook(_payload("Write", project.root / "README.txt", content="hi")) == ALLOW
+
+
+def test_hook_edit_that_does_not_apply_is_allowed(project):
+    sync(project)
+    acc = project.root / "src/domains/accounts/service.py"
+    assert run_hook(_payload("Edit", acc, old_string="NOT PRESENT", new_string="x")) == ALLOW
+
+
+def test_tach_expose_paths_are_qualified(project):
+    from anma.compile import render_tach_toml
+    toml = render_tach_toml(project)
+    assert "domains.accounts.service.get_user" in toml          # qualified to import path
+    assert '"accounts.service.get_user"' not in toml            # not the bare logical name

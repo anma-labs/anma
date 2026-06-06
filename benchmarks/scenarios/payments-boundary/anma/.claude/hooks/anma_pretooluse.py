@@ -1,24 +1,18 @@
 #!/usr/bin/env python3
-"""ANMA PreToolUse hook. Exit code 2 blocks the tool call (Claude Code convention)."""
-import json
-import subprocess
+"""ANMA PreToolUse hook (generated). Exit code 2 blocks the tool call.
+
+Thin shim: the real logic lives in `anma.hook`, so it is tested and upgradable
+via `pip install -U anma` without re-running `anma sync`. Fails OPEN (allows the
+edit) with a warning if anma is not importable, so a missing install never blocks
+your work — CI and pre-commit remain the hard gate.
+"""
 import sys
 
-def main() -> int:
-    try:
-        json.load(sys.stdin)  # tool payload; we re-check the whole project, fast.
-    except Exception:
-        pass
-    proc = subprocess.run(["anma", "check", "--quiet"], capture_output=True, text=True)
-    if proc.returncode != 0:
-        sys.stderr.write(
-            "ANMA: this edit breaks a module boundary.\n"
-            + proc.stdout
-            + "\nFix the import, or update the module's anma.yaml + run `anma sync` "
-            "and note it in DECISIONS.md.\n"
-        )
-        return 2  # block
-    return 0
+try:
+    from anma.hook import run_hook
+except Exception:
+    sys.stderr.write("ANMA hook: `anma` not importable in this environment; "
+                     "skipping in-session check (CI/pre-commit still enforce).\n")
+    sys.exit(0)
 
-if __name__ == "__main__":
-    sys.exit(main())
+sys.exit(run_hook(sys.stdin.read()))
