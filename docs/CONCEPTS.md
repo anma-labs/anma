@@ -58,7 +58,7 @@ invariants:
 | `.claude/hooks/anma_pretooluse.py` | PreToolUse hook; exit code 2 blocks a boundary-breaking edit in-session. |
 | `.claude/settings.json` | Wires the hook (seeded once; not overwritten). |
 | `tach.toml` | Engine config for the `tach` backend. |
-| `.github/workflows/anma.yml` | CI: `anma sync --check` then `anma check`. |
+| `.github/workflows/anma.yml` | CI starting point (`anma sync --check` then `anma check`). Seeded once and customizable — not overwritten or drift-checked. |
 | `.github/CODEOWNERS` | Generated only if any module declares `owners`. |
 | `DECISIONS.md` | Append-only rationale (seeded once; you maintain it). |
 

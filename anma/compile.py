@@ -113,7 +113,6 @@ def regenerated_plan(project: Project) -> dict[Path, str]:
         root / "tach.toml": render_tach_toml(project),
         root / ".claude" / "rules" / "boundaries.md": T.BOUNDARIES_RULE,
         root / ".claude" / "hooks" / "anma_pretooluse.py": T.PRETOOLUSE_HOOK,
-        root / ".github" / "workflows" / "anma.yml": render_ci(project),
     }
     for m in project.modules:
         plan[m.path / "CLAUDE.md"] = render_module_claude(m)
@@ -155,6 +154,9 @@ def sync(project: Project) -> list[str]:
 def _seed_once(project: Project) -> dict[Path, str]:
     today = _dt.date.today().isoformat()
     return {
+        # CI is a starting point users customize (e.g. install path), so it is
+        # seeded once and not drift-checked — like settings.json / pre-commit.
+        project.root / ".github" / "workflows" / "anma.yml": render_ci(project),
         project.root / ".claude" / "settings.json": T.SETTINGS_JSON.format(),
         project.root / ".pre-commit-config.yaml": T.PRECOMMIT,
         project.root / "DECISIONS.md": T.DECISIONS_SEED.format(date=today),

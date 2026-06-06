@@ -239,3 +239,22 @@ def test_tach_expose_paths_are_qualified(project):
     toml = render_tach_toml(project)
     assert "domains.accounts.service.get_user" in toml          # qualified to import path
     assert '"accounts.service.get_user"' not in toml            # not the bare logical name
+
+
+def test_anma_yml_is_seed_once_not_drift_checked(project):
+    from anma.compile import check_drift
+    sync(project)
+    ci = project.root / ".github/workflows/anma.yml"
+    # user customizes the generated CI (e.g. install path) — must not be drift
+    ci.write_text(ci.read_text().replace("pip install anma[tach]",
+                                          "pip install -e .[tach]"))
+    stale = check_drift(load_project(project.root))
+    assert not any("anma.yml" in s for s in stale)
+
+
+def test_sync_does_not_clobber_customized_ci(project):
+    sync(project)
+    ci = project.root / ".github/workflows/anma.yml"
+    ci.write_text("# my custom CI\n")
+    sync(load_project(project.root))
+    assert ci.read_text() == "# my custom CI\n"
