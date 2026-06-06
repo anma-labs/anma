@@ -1,0 +1,9 @@
+name: accounts
+summary: User accounts. Decoupled from billing by an earlier decision.
+public:
+  - accounts.service.get_user
+  - accounts.service.account_summary
+  - accounts.service.monthly_report
+depends_on: []
+invariants:
+  - accounts must not import billing; invoiced totals are injected by the caller.

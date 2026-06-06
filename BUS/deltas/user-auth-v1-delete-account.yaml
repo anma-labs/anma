@@ -1,7 +1,0 @@
-source: user-auth
-timestamp: 2026-05-23T00:00:00Z
-type: interface_added
-description: "delete_account publishes BUS event for cross-module data cleanup"
-impact:
-  action_required: acknowledge
-  consumers_affected: [todo-api, notifications]

@@ -1,0 +1,8 @@
+# ANMA dogfooding itself. The package is a single module today; see the note in
+# CLAUDE.md about file-level modules for enforcing the internal layering.
+schema_version: 1
+source_roots:
+  - .
+exclude:
+  - benchmarks      # contains demo scenarios with their own contracts
+python_version: "3.10"

@@ -1,9 +1,0 @@
-module: notifications
-assumptions:
-  - id: push_provider
-    category: notify-delivery
-    content: "Push via FCM/APNs, email via SendGrid or SES"
-
-  - id: in_app_retention
-    category: notify-storage
-    content: "In-app notifications stored in PostgreSQL, 90-day retention"

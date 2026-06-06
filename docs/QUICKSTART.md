@@ -1,99 +1,86 @@
-# ANMA Quickstart
+# Quickstart
 
-Get a working ANMA project in 5 minutes.
+From install to watching Claude Code get blocked at a boundary. ~5 minutes.
+For the full field reference, see [CONCEPTS.md](CONCEPTS.md).
 
-## Prerequisites
-
-- Python 3.10+
-- `pip install pyyaml`
-
-## Step 1: Clone
+## 1. Install
 
 ```bash
-git clone https://github.com/anma-labs/anma-scaffold my-project
-cd my-project
+pip install anma[tach]   # tach backend (interface-level checks); plain `anma` also works
+anma --version
 ```
 
-## Step 2: Verify the scaffold
+## 2. Scaffold
 
 ```bash
-python3 tools/lint_contracts.py
+anma init
 ```
 
-Three example modules checked, 0 errors. Browse `domains/core/user-auth/CONTRACT.yaml` to see a full contract.
+This drops a root `anma.yaml` and a worked example under `src/domains/`: an
+`accounts` module and a `billing` module, where `billing` may depend on
+`accounts` but **not** the reverse.
 
-## Step 3: Design your contracts
-
-Upload `CLAUDE.md` and `CONVENTIONS.yaml` to [Claude](https://claude.ai) and describe what you're building:
-
-> "I uploaded my ANMA scaffold files. I want to build a URL shortener with
-> auth, link management, analytics, and rate limiting."
-
-Claude drafts contracts, asks clarifying questions, and iterates with you. When ready:
-
-> "Give me all CONTRACT.yaml files so I can save them and run the linter."
-
-Claude provides them as downloadable files.
-
-## Step 4: Import and validate
+## 3. Generate the guardrails
 
 ```bash
-python3 tools/init_project.py                                 # clear example modules
-python3 tools/import_contracts.py ~/Downloads/*-CONTRACT.yaml  # import, sync, lint
+anma sync
 ```
 
-One command creates module directories, copies contracts, generates supporting
-files (STATE, MEMORY, TESTS, GRAPH, MANIFEST), and runs the linter. If there
-are errors, fix the contracts and re-import. Target 0 errors before moving on.
+You now have a generated root `CLAUDE.md` (architecture map), a per-module
+`CLAUDE.md` in each module folder, a `PreToolUse` hook under `.claude/`, a
+`tach.toml`, and a CI workflow. Look at `src/domains/accounts/CLAUDE.md` — that's
+what Claude Code loads the moment it opens the `accounts` folder.
 
-## Step 5: Assign managers
+## 4. See enforcement, three ways
 
-Edit MANIFEST.yaml — add `manager: <name>` to each module entry and define
-manager groups:
-
-```yaml
-modules:
-  auth: { status: stable, manager: core }
-  links: { status: stable, manager: features }
-
-managers:
-  core: { owns: [auth, rate-limiter] }
-  features: { owns: [links, analytics] }
-```
-
-Run `python3 tools/lint_contracts.py --strict` — target 0 errors, 0 warnings.
-
-## Step 6: Implement with Claude Code
+**At the command line:**
 
 ```bash
-claude
-> Read all module contracts and implement them.
+anma check          # ✓ All module boundaries respected
 ```
 
-Claude Code reads CLAUDE.md, knows the architecture, and implements each
-module. It handles dependency ordering, updates STATE.yaml with progress,
-and captures decisions in MEMORY.yaml.
+Now add a forbidden import to `src/domains/accounts/service.py`:
 
-## Step 7: Discover and revise
-
-If implementation surfaces contract gaps (undeclared dependencies, missing
-error codes), revise the contracts and re-import:
+```python
+from domains.billing.service import total_invoiced   # accounts may not use billing
+```
 
 ```bash
-python3 tools/import_contracts.py revised-CONTRACT.yaml --force
+anma check          # ✗ 1 boundary violation(s) — points at the file:line
 ```
 
-Then update the implementation. Contracts catching integration bugs is ANMA
-working as designed.
+**In Claude Code (the part that matters):** open the project and ask Claude to
+add that same `billing` import to `accounts`. The PreToolUse hook returns exit
+code 2 and Claude Code blocks the edit before it lands, with a message telling it
+to fix the import or update the contract.
 
-## Step 8: Wire and ship
+**In CI:** the generated `.github/workflows/anma.yml` runs `anma sync --check`
+(catches docs/config that drifted from the contracts) and `anma check`.
+
+## 5. Change a boundary the right way
+
+Boundaries aren't sacred — they're just *explicit*. To let `accounts` use
+something new, don't work around the check: edit the module's `anma.yaml`
+(`depends_on`), then:
 
 ```bash
-> Create app.py that wires all modules together.
+anma sync           # regenerate the docs + config from the new contract
 ```
 
-## What's Next
+and add a one-line entry to `DECISIONS.md` saying why. Now the new boundary is
+real, enforced, and preserved for the next session.
 
-- [Architecture Overview](ARCHITECTURE.md) — how ANMA works and the 7 design principles
-- [Contract Guide](CONTRACT-GUIDE.md) — best practices for writing contracts
-- [CONTRIBUTING.md](../CONTRIBUTING.md) — how to contribute
+## Adopting an existing codebase
+
+A large repo won't be clean on day one. Two levers:
+
+- `anma check --warn` reports violations but exits 0, so the build stays green
+  while you fix them.
+- Mark a not-yet-removable dependency as `deprecated_deps:` in the contract — it
+  warns instead of failing, so you can ratchet toward compliance.
+
+## Next
+
+- [CONCEPTS.md](CONCEPTS.md) — every field, every generated file, the engine.
+- [../benchmarks/README.md](../benchmarks/README.md) — measure the with/without
+  difference on your own machine.
