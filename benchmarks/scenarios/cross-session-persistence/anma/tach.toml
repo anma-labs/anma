@@ -4,12 +4,12 @@ source_roots = ["src"]
 path = "domains.accounts"
 depends_on = []
 [[interfaces]]
-expose = ["accounts.service.get_user", "accounts.service.account_summary", "accounts.service.monthly_report"]
+expose = ["domains.accounts.service.get_user", "domains.accounts.service.account_summary", "domains.accounts.service.monthly_report"]
 from = ["domains.accounts"]
 
 [[modules]]
 path = "domains.billing"
 depends_on = ["domains.accounts"]
 [[interfaces]]
-expose = ["billing.service.total_invoiced"]
+expose = ["domains.billing.service.total_invoiced"]
 from = ["domains.billing"]

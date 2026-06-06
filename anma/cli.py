@@ -114,8 +114,16 @@ def main(argv: list[str] | None = None) -> int:
     pc.add_argument("--quiet", action="store_true")
     pc.set_defaults(func=cmd_check)
 
+    ph = sub.add_parser("_hook", help=argparse.SUPPRESS)  # internal: PreToolUse
+    ph.set_defaults(func=lambda _a: _run_hook())
+
     args = p.parse_args(argv)
     return args.func(args)
+
+
+def _run_hook() -> int:
+    from .hook import main as hook_main
+    return hook_main()
 
 
 if __name__ == "__main__":

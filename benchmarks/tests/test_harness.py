@@ -60,3 +60,71 @@ def test_replay_pipeline_discriminates_arms(tmp_path):
     agg = data["aggregate"]
     assert agg["payments-boundary/control"]["violations_total"] >= 1
     assert agg["payments-boundary/anma"]["violations_total"] == 0
+
+
+def test_runner_flags_blocked_no_change_run(monkeypatch):
+    """A run that errored/blocked and changed nothing must NOT score as clean."""
+    import types, json as _json
+    import bench.runner as R
+
+    canned = _json.dumps({
+        "is_error": False, "num_turns": 25, "subtype": "success",
+        "permission_denials": [{"tool_name": "Edit"}],
+    })
+    monkeypatch.setattr(R.subprocess, "run",
+                        lambda *a, **k: types.SimpleNamespace(
+                            stdout=canned, stderr="", returncode=0))
+    arm = SCENARIOS / "payments-boundary" / "anma"
+    res = R.ClaudeCodeRunner().run(arm, "task", "anma")
+    assert res.turns == 25
+    assert res.blocked == 1          # the hook block, counted from permission_denials
+    assert res.status == "no_change" # nothing was modified -> not a clean pass
+
+
+def test_runner_marks_missing_cli_as_error(monkeypatch):
+    import bench.runner as R
+    def boom(*a, **k):
+        raise FileNotFoundError("claude")
+    monkeypatch.setattr(R.subprocess, "run", boom)
+    res = R.ClaudeCodeRunner().run(SCENARIOS / "payments-boundary" / "anma", "t", "anma")
+    assert res.status == "error"
+
+
+def test_control_arm_blocks_not_attributed_to_anma(monkeypatch):
+    """A permission denial in the control arm (no hook) must NOT count as an ANMA block."""
+    import types, json as _json
+    import bench.runner as R
+    canned = _json.dumps({"is_error": False, "num_turns": 12,
+                          "permission_denials": [{"tool_name": "Edit"}]})
+    monkeypatch.setattr(R.subprocess, "run",
+                        lambda *a, **k: types.SimpleNamespace(
+                            stdout=canned, stderr="", returncode=0))
+    res = R.ClaudeCodeRunner().run(SCENARIOS / "payments-boundary" / "control", "t", "control")
+    assert res.has_hook is False
+    assert res.blocked == 0          # denial exists but is NOT attributed to ANMA
+
+
+def test_adversarial_scenario_discriminates():
+    from bench.scorer import load_spec, count_violations
+    from bench.runner import ReplayRunner
+    sc = SCENARIOS / "orders-inventory"
+    spec = load_spec(sc / "boundaries.yaml")
+    r = ReplayRunner(sc)
+    ctrl = count_violations(r.run(sc / "control", "t", "control").workdir, spec)
+    anma = count_violations(r.run(sc / "anma", "t", "anma").workdir, spec)
+    assert len(ctrl) >= 1 and len(anma) == 0
+
+
+def test_scenario_filter_runs_only_named(tmp_path):
+    out = tmp_path / "r"
+    rc = main(["--runner", "replay", "--scenario", "orders-inventory", "--out", str(out)])
+    assert rc == 0
+    data = json.loads((out / "results.json").read_text())
+    scenarios = {r["scenario"] for r in data["trials"]}
+    assert scenarios == {"orders-inventory"}
+
+
+def test_scenario_filter_rejects_unknown(tmp_path):
+    import pytest
+    with pytest.raises(SystemExit):
+        main(["--runner", "replay", "--scenario", "does-not-exist", "--out", str(tmp_path)])

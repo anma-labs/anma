@@ -21,6 +21,8 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="bench",
                                 description="ANMA with/without boundary-violation benchmark")
     p.add_argument("--scenarios-dir", default=str(here / "scenarios"))
+    p.add_argument("--scenario", action="append", default=None,
+                   help="only run scenarios with this directory name (repeatable)")
     p.add_argument("--runner", default="replay", choices=["replay", "claude-code"])
     p.add_argument("--trials", type=int, default=1)
     p.add_argument("--model", default=None)
@@ -30,6 +32,14 @@ def main(argv: list[str] | None = None) -> int:
     scen_paths = discover_scenarios(Path(a.scenarios_dir))
     if not scen_paths:
         raise SystemExit(f"no scenarios under {a.scenarios_dir}")
+    if a.scenario:
+        wanted = set(a.scenario)
+        available = {p.name for p in scen_paths}
+        missing = wanted - available
+        if missing:
+            raise SystemExit(f"unknown scenario(s): {sorted(missing)}; "
+                             f"available: {sorted(available)}")
+        scen_paths = [p for p in scen_paths if p.name in wanted]
     if a.runner == "replay":
         print("=== REPLAY MODE: validates the harness + scorer, NOT a live-model result ===\n")
 
@@ -45,9 +55,13 @@ def main(argv: list[str] | None = None) -> int:
             for t in range(a.trials):
                 res = runner.run(arm_dir, task, arm)
                 v = count_violations(res.workdir, spec)
-                records.append(TrialRecord(spath.name, arm, t, len(v), res.turns, res.blocked))
+                records.append(TrialRecord(spath.name, arm, t, len(v),
+                                           res.turns, res.blocked, res.status,
+                                           res.has_hook))
+                flag = "" if res.status == "ok" else f"  <{res.status}>"
                 print(f"  {spath.name}/{arm} trial {t}: "
-                      f"{len(v)} violation(s), {res.blocked} hook block(s)")
+                      f"{len(v)} violation(s), {res.blocked} hook block(s), "
+                      f"{res.turns} turns{flag}")
 
     agg = aggregate(records)
     out = Path(a.out)

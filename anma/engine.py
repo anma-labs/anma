@@ -65,7 +65,10 @@ def _check_tach(project: Project) -> list[Violation]:
 
 
 # --------------------------------------------------------------------------- #
-def _check_builtin(project: Project) -> list[Violation]:
+# Reusable helpers (shared by the full check and the per-edit hook).            #
+# --------------------------------------------------------------------------- #
+def owner_resolver(project: Project):
+    """Return a function mapping a dotted import to its owning module (or None)."""
     by_import = {m.import_path: m for m in project.modules}
     prefixes = sorted(by_import, key=len, reverse=True)
 
@@ -75,6 +78,43 @@ def _check_builtin(project: Project) -> list[Violation]:
                 return by_import[p]
         return None
 
+    return owner
+
+
+def module_for_file(project: Project, file: Path) -> ModuleContract | None:
+    """Find the module whose directory contains ``file`` (deepest match)."""
+    file = file.resolve()
+    best = None
+    for m in project.modules:
+        try:
+            file.relative_to(m.path.resolve())
+        except ValueError:
+            continue
+        if best is None or len(str(m.path)) > len(str(best.path)):
+            best = m
+    return best
+
+
+def disallowed_targets(project: Project, module: ModuleContract,
+                       file: Path, source: str) -> set[str]:
+    """Module names that ``source`` (proposed content of ``file``) imports but
+    ``module`` may not depend on. Used by the hook to judge a single edit."""
+    owner = owner_resolver(project)
+    allowed = set(module.depends_on) | set(module.deprecated_deps) | {module.name}
+    try:
+        tree = ast.parse(source, filename=str(file))
+    except SyntaxError:
+        return set()
+    out: set[str] = set()
+    for imported, _ln in parse_imports(tree, file, module._source_root):
+        tgt = owner(imported)
+        if tgt is not None and tgt.name != module.name and tgt.name not in allowed:
+            out.add(tgt.name)
+    return out
+
+
+def _check_builtin(project: Project) -> list[Violation]:
+    owner = owner_resolver(project)
     violations: list[Violation] = []
     for m in project.modules:
         allowed = set(m.depends_on) | {m.name}
@@ -84,17 +124,16 @@ def _check_builtin(project: Project) -> list[Violation]:
                 tree = ast.parse(py.read_text(), filename=str(py))
             except SyntaxError:
                 continue
-            for imported, lineno in _iter_imports(tree, py, m._source_root):
+            for imported, lineno in parse_imports(tree, py, m._source_root):
                 target = owner(imported)
                 if target is None or target.name == m.name:
                     continue
+                rel = py.relative_to(project.root)
                 if target.name in deprecated:
-                    rel = py.relative_to(project.root)
                     violations.append(Violation(
                         m.name, str(rel), lineno,
                         f"uses deprecated dependency '{target.name}'", deprecated=True))
                 elif target.name not in allowed:
-                    rel = py.relative_to(project.root)
                     violations.append(Violation(
                         m.name, str(rel), lineno,
                         f"imports '{target.name}' but it is not in depends_on "
@@ -102,7 +141,8 @@ def _check_builtin(project: Project) -> list[Violation]:
     return violations
 
 
-def _iter_imports(tree: ast.AST, file: Path, src: Path):
+def parse_imports(tree: ast.AST, file: Path, src: Path):
+    """Yield (dotted_module, lineno) for imports in ``tree``, resolving relative ones."""
     pkg_parts = file.parent.resolve().relative_to(src).parts
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):

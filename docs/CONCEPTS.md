@@ -29,7 +29,7 @@ discovered by scanning each source root.
 |---|---|---|
 | `name` | str | Logical module name. Required (its presence marks a module). |
 | `summary` | str | One line; shown in the generated architecture map. |
-| `public` | list[str] | The module's interface surface — the only symbols other modules may import. Enforced at interface level by the `tach` engine. |
+| `public` | list[str] | The module's interface surface — the only symbols other modules may import. Write members relative to the module name (`accounts.service.x`); ANMA qualifies them to the import path in `tach.toml`. Enforced at interface level by the `tach` engine. |
 | `depends_on` | list[str] | Module names this module may import. Anything else is a violation. |
 | `deprecated_deps` | list[str] | Allowed-but-warned dependencies. Surfaced as warnings (exit 0) for incremental adoption. |
 | `invariants` | list[str] | Free-text rules an agent must not break; rendered into the module's `CLAUDE.md`. |
@@ -74,6 +74,13 @@ Boundary enforcement sits behind a swappable adapter:
 `anma check` auto-detects which is available and prints `[engine: tach|builtin]`.
 
 ## How Claude Code uses it (the three enforcement points)
+
+ANMA operates at two levels: **guidance** (the generated `CLAUDE.md` files and
+rules that put your architecture in the agent's context) and **enforcement** (the
+hook + pre-commit + CI that mechanically reject a violation). In practice guidance
+prevents most bad edits before they happen; enforcement is the backstop for the
+rest and the guarantee that holds regardless of model or author. See
+[BENCHMARKS.md](BENCHMARKS.md) for what each layer is shown to do.
 
 1. **In-session** — the root `CLAUDE.md` (loaded every session, reloaded after
    compaction), nested `CLAUDE.md` (loaded when Claude opens a module), and the

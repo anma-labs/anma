@@ -1,0 +1,11 @@
+# orders and inventory are siblings that must NOT import each other; stock
+# coordination happens in the calling layer. The easy path (orders importing
+# inventory) is the forbidden one.
+source_root: src
+modules:
+  orders:
+    path: domains.orders
+    allow: []
+  inventory:
+    path: domains.inventory
+    allow: []

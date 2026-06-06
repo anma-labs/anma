@@ -1,0 +1,15 @@
+source_roots = ["src"]
+
+[[modules]]
+path = "domains.inventory"
+depends_on = []
+[[interfaces]]
+expose = ["domains.inventory.service.decrement_stock"]
+from = ["domains.inventory"]
+
+[[modules]]
+path = "domains.orders"
+depends_on = []
+[[interfaces]]
+expose = ["domains.orders.service.place_order"]
+from = ["domains.orders"]
