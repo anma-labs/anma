@@ -113,3 +113,18 @@ def test_adversarial_scenario_discriminates():
     ctrl = count_violations(r.run(sc / "control", "t", "control").workdir, spec)
     anma = count_violations(r.run(sc / "anma", "t", "anma").workdir, spec)
     assert len(ctrl) >= 1 and len(anma) == 0
+
+
+def test_scenario_filter_runs_only_named(tmp_path):
+    out = tmp_path / "r"
+    rc = main(["--runner", "replay", "--scenario", "orders-inventory", "--out", str(out)])
+    assert rc == 0
+    data = json.loads((out / "results.json").read_text())
+    scenarios = {r["scenario"] for r in data["trials"]}
+    assert scenarios == {"orders-inventory"}
+
+
+def test_scenario_filter_rejects_unknown(tmp_path):
+    import pytest
+    with pytest.raises(SystemExit):
+        main(["--runner", "replay", "--scenario", "does-not-exist", "--out", str(tmp_path)])

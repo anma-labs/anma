@@ -7,6 +7,19 @@ All notable changes to ANMA are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.5.3] — 2026-06-06
+
+### Added
+- `--scenario NAME` filter on the benchmark runner (repeatable) so a focused run
+  (e.g. 20 trials on one scenario) doesn't spend tokens on the whole suite.
+
+### Changed
+- `docs/BENCHMARKS.md` rewritten around the first real results: a two-tier
+  finding (frontier models respect documented architecture unaided; cheaper
+  models violate routinely and ANMA drives that to zero), with the enforcement
+  layer verified by a direct hook test. Positions ANMA as insurance for cheaper
+  agents plus a CI/governance guarantee, and publishes the frontier null result.
+
 ## [0.5.2] — 2026-06-06
 
 Follow-ups from the second live run (which showed the harness mis-attributing a
