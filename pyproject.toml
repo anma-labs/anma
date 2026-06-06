@@ -1,28 +1,31 @@
 [build-system]
-requires = ["setuptools>=68.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
-name = "anma-scaffold"
-version = "0.3.0"
-description = "AI-Native Modular Architecture — contract-driven scaffold for AI agents"
+name = "anma"
+version = "0.5.0"
+description = "Architecture contracts that make Claude Code respect module boundaries, preserve architecture across sessions, and coordinate parallel work."
+readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
-readme = "README.md"
-keywords = ["ai", "architecture", "contracts", "claude", "agents"]
-dependencies = ["pyyaml"]
-
-[project.urls]
-Homepage = "https://github.com/anma-labs/anma-scaffold"
-Documentation = "https://github.com/anma-labs/anma-scaffold"
-Changelog = "https://github.com/anma-labs/anma-scaffold"
-Issues = "https://github.com/anma-labs/anma-scaffold"
+keywords = ["claude-code", "ai-agents", "architecture", "module-boundaries", "llm"]
+authors = [{ name = "Kellum Ho", email = "kellum@anmalabs.dev" }]
+dependencies = ["pyyaml>=6.0,<7"]
 
 [project.optional-dependencies]
-tokens = ["tiktoken"]
+# tach is the preferred enforcement engine (Rust, interface-level checks).
+# Optional: ANMA ships a zero-dep builtin fallback if this is absent.
+tach = ["tach>=0.30"]
+dev = ["pytest>=8.0", "pip-audit>=2.7"]
+
+[project.urls]
+Homepage = "https://anmalabs.dev"
+Repository = "https://github.com/anma-labs/anma"
 
 [project.scripts]
-anma = "tools.anma:main"
+anma = "anma.cli:main"
 
-[tool.setuptools]
-packages = ["tools"]
+[tool.hatch.build.targets.wheel]
+packages = ["anma"]
+exclude = ["anma/CLAUDE.md", "anma/anma.yaml"]  # dogfood artifacts, not package data

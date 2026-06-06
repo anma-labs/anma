@@ -1,0 +1,10 @@
+# Same ground-truth graph as payments-boundary. The difference here is whether
+# the agent, in a FRESH session, re-breaks a boundary a prior session had fixed.
+source_root: src
+modules:
+  accounts:
+    path: domains.accounts
+    allow: []
+  billing:
+    path: domains.billing
+    allow: [accounts]

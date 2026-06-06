@@ -1,0 +1,182 @@
+"""Core tests for ANMA: contracts, validation, compile, and the builtin engine."""
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from anma.compile import sync
+from anma.contracts import load_project, validate
+from anma.engine import check
+from anma.scaffold import init_project
+from anma.templates import MAP_START
+
+
+@pytest.fixture
+def project(tmp_path: Path):
+    init_project(tmp_path)
+    return load_project(tmp_path)
+
+
+def test_init_discovers_modules(project):
+    names = {m.name for m in project.modules}
+    assert names == {"accounts", "billing"}
+
+
+def test_import_paths_resolved(project):
+    billing = project.by_name()["billing"]
+    assert billing.import_path == "domains.billing"
+
+
+def test_valid_contracts_have_no_issues(project):
+    assert validate(project) == []
+
+
+def test_unknown_dependency_flagged(tmp_path: Path):
+    init_project(tmp_path)
+    (tmp_path / "src/domains/billing/anma.yaml").write_text(
+        "name: billing\nsummary: x\ndepends_on:\n  - ghost\n"
+    )
+    issues = validate(load_project(tmp_path))
+    assert any("unknown module 'ghost'" in i for i in issues)
+
+
+def test_cycle_detected(tmp_path: Path):
+    init_project(tmp_path)
+    # make accounts depend on billing -> billing already depends on accounts
+    (tmp_path / "src/domains/accounts/anma.yaml").write_text(
+        "name: accounts\nsummary: x\ndepends_on:\n  - billing\n"
+    )
+    issues = validate(load_project(tmp_path))
+    assert any("cycle" in i.lower() for i in issues)
+
+
+def test_sync_generates_expected_artifacts(project):
+    written = sync(project)
+    rel = {Path(w).relative_to(project.root).as_posix() for w in written}
+    assert "CLAUDE.md" in rel
+    assert "tach.toml" in rel
+    assert "src/domains/billing/CLAUDE.md" in rel
+    assert ".claude/hooks/anma_pretooluse.py" in rel
+    assert ".claude/rules/boundaries.md" in rel
+
+
+def test_sync_is_idempotent_on_map(project):
+    sync(project)
+    first = (project.root / "CLAUDE.md").read_text()
+    sync(project)
+    second = (project.root / "CLAUDE.md").read_text()
+    assert first == second
+    assert second.count(MAP_START) == 1  # not duplicated
+
+
+def test_sync_preserves_user_prose(project):
+    root_claude = project.root / "CLAUDE.md"
+    sync(project)
+    text = "# My Project\n\nHand-written intro.\n\n" + root_claude.read_text().split("\n", 2)[2]
+    root_claude.write_text(text)
+    sync(project)
+    assert "Hand-written intro." in root_claude.read_text()
+
+
+def test_builtin_engine_passes_when_allowed(project):
+    assert check(project, engine="builtin") == []
+
+
+def test_builtin_engine_catches_illegal_import(project):
+    svc = project.root / "src/domains/accounts/service.py"
+    svc.write_text(svc.read_text() + "\nfrom domains.billing.service import create_invoice\n")
+    violations = check(load_project(project.root), engine="builtin")
+    assert len(violations) == 1
+    assert violations[0].module == "accounts"
+    assert "billing" in violations[0].message
+
+
+def test_relative_imports_resolved(project):
+    # billing/service.py uses an absolute import; add a relative one that is illegal
+    svc = project.root / "src/domains/accounts/service.py"
+    svc.write_text(svc.read_text() + "\nfrom ...domains.billing import service\n")
+    violations = check(load_project(project.root), engine="builtin")
+    assert any(v.module == "accounts" for v in violations)
+
+
+def test_codeowners_generated_from_owners(tmp_path):
+    init_project(tmp_path)
+    p = tmp_path / "src/domains/billing/anma.yaml"
+    p.write_text(p.read_text() + "owners:\n  - '@team-pay'\n")
+    sync(load_project(tmp_path))
+    co = (tmp_path / ".github/CODEOWNERS").read_text()
+    assert "/src/domains/billing/ @team-pay" in co
+
+
+def test_no_codeowners_without_owners(tmp_path):
+    init_project(tmp_path)
+    sync(load_project(tmp_path))
+    assert not (tmp_path / ".github/CODEOWNERS").exists()
+
+
+# ---- v0.5.0: drift detection, incremental adoption, monorepo, schema -------
+
+def test_drift_clean_after_sync(project):
+    from anma.compile import check_drift
+    sync(project)
+    assert check_drift(load_project(project.root)) == []
+
+
+def test_drift_detects_unsynced_contract_edit(project):
+    from anma.compile import check_drift
+    sync(project)
+    y = project.root / "src/domains/billing/anma.yaml"
+    y.write_text(y.read_text().replace("Invoices and payment processing.", "Totally new summary."))
+    stale = check_drift(load_project(project.root))
+    assert any("CLAUDE.md" in s for s in stale)
+
+
+def test_deprecated_dep_is_a_warning_not_error(project):
+    y = project.root / "src/domains/accounts/anma.yaml"
+    y.write_text(y.read_text() + "deprecated_deps:\n  - billing\n")
+    svc = project.root / "src/domains/accounts/service.py"
+    svc.write_text(svc.read_text() + "\nfrom domains.billing.service import create_invoice\n")
+    violations = check(load_project(project.root), engine="builtin")
+    assert len(violations) == 1
+    assert violations[0].deprecated is True
+
+
+def test_multi_source_root_discovery(tmp_path):
+    (tmp_path / "anma.yaml").write_text("schema_version: 1\nsource_roots: [a, b]\n")
+    for root, mod in (("a", "auth"), ("b", "api")):
+        d = tmp_path / root / "mods" / mod
+        d.mkdir(parents=True)
+        (d / "anma.yaml").write_text(f"name: {mod}\nsummary: x\ndepends_on: []\n")
+    project = load_project(tmp_path)
+    assert {m.name for m in project.modules} == {"auth", "api"}
+    assert project.source_roots == ["a", "b"]
+
+
+def test_schema_version_too_new_is_rejected(tmp_path):
+    init_project(tmp_path)
+    (tmp_path / "anma.yaml").write_text("schema_version: 999\nsource_roots: [src]\n")
+    with pytest.raises(ValueError, match="schema_version"):
+        load_project(tmp_path)
+
+
+def test_exclude_dir_skips_modules(tmp_path):
+    init_project(tmp_path)  # creates src/domains/{accounts,billing}
+    # a vendored copy with its own contract that must be ignored
+    vend = tmp_path / "vendor" / "thing"
+    vend.mkdir(parents=True)
+    (vend / "anma.yaml").write_text("name: vendored\nsummary: x\ndepends_on: []\n")
+    (tmp_path / "anma.yaml").write_text(
+        "schema_version: 1\nsource_roots: [src, vendor]\nexclude: [vendor]\n")
+    names = {m.name for m in load_project(tmp_path).modules}
+    assert "vendored" not in names
+    assert {"accounts", "billing"} <= names
+
+
+def test_default_ignore_skips_node_modules(tmp_path):
+    init_project(tmp_path)
+    nm = tmp_path / "src" / "node_modules" / "pkg"
+    nm.mkdir(parents=True)
+    (nm / "anma.yaml").write_text("name: junk\nsummary: x\ndepends_on: []\n")
+    names = {m.name for m in load_project(tmp_path).modules}
+    assert "junk" not in names

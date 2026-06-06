@@ -1,84 +1,58 @@
-# Contributing to ANMA
+# Contributing
 
-## Getting Started
+ANMA is deliberately small (~780 lines). The bar for new code is high: prefer
+making the existing primitives sharper over adding surface area. If a change
+grows the tool a lot, it probably belongs in a plugin or a separate scenario, not
+the core.
 
-1. Fork the repository
-2. Clone your fork
-3. Create a feature branch: `git checkout -b feature/my-change`
-4. Make your changes
-5. Run the linter: `python3 tools/lint_contracts.py --strict`
-6. Commit and push
-7. Open a pull request
-
-## What to Contribute
-
-### High-value contributions
-
-- **New tools** — scripts that solve real problems in contract-driven development
-- **Linter rules** — additional checks for `lint_contracts.py`
-- **Documentation improvements** — clearer explanations, better examples, fixed typos
-- **Bug fixes** — in tools, linter, or scaffolding scripts
-- **Example modules** — well-designed contracts that demonstrate patterns
-
-### Before starting large changes
-
-Open an issue first. Describe what you want to change and why. This avoids duplicate work and ensures your approach aligns with the project direction.
-
-## Code Standards
-
-### Python scripts (tools/)
-
-- Python 3.10+ compatible
-- No external dependencies beyond PyYAML
-- Include docstrings for public functions
-- Run `python3 tools/test_linter.py` to verify linter changes
-
-### YAML files
-
-- Follow CONVENTIONS.yaml naming rules
-- Module names: `kebab-case`
-- Interface names: `snake_case`
-- Error codes: `SCREAMING_SNAKE_CASE`
-
-### Contracts
-
-- Every interface must have at least one invariant
-- Invariants describe behavior, not implementation
-- Implementation details go in ASSUMPTIONS.yaml
-- Lint with `--strict` before submitting
-
-## Pull Request Guidelines
-
-- Keep PRs focused — one logical change per PR
-- Include a clear description of what changed and why
-- If adding a tool, include usage examples in the PR description
-- If changing the linter, include test cases
-- If adding a convention, explain the reasoning
-
-## Commit Messages
-
-Use imperative mood: "Add feature" not "Added feature" or "Adds feature".
-
-```
-Add contract versioning validation to linter
-
-The linter now checks that contract versions are positive integers
-and that version bumps accompany breaking changes.
-```
-
-## Running Tests
+## Dev setup
 
 ```bash
-# Lint all contracts
-python3 tools/lint_contracts.py --strict
-
-# Test the linter itself
-python3 tools/test_linter.py
-
-# Smoke test all tools
-python3 tools/smoke_test.py
+git clone https://github.com/anma-labs/anma
+cd anma
+pip install -e .[dev]      # pytest + pip-audit; add [tach] for the tach engine
+python -m pytest tests/ -q
 ```
 
-## Architecture Decisions
+## ANMA dogfoods itself
 
-If your change affects how ANMA works conceptually (new file types, changed conventions, modified lifecycle), open a discussion issue first. These changes affect every project using ANMA and need careful consideration.
+The repo carries its own contracts, so the same checks you ship run here:
+
+```bash
+anma sync --check .        # generated docs/config are current with the contracts
+anma check .               # internal boundaries respected
+```
+
+Both must pass before a PR merges (CI enforces them in the `dogfood` job).
+
+## PR checklist
+
+- [ ] `python -m pytest tests/ -q` green (and `benchmarks/` tests if you touched the harness)
+- [ ] `anma sync --check .` and `anma check .` clean — if you changed a contract or a template, re-run `anma sync .` and commit the regenerated files
+- [ ] `pip-audit` clean
+- [ ] New behavior has a test; new contract fields are documented in `docs/CONCEPTS.md`
+- [ ] `CHANGELOG.md` updated under "Unreleased"
+
+## The schema-stability rule (read before touching contracts)
+
+The contract schema is ANMA's real public API — users commit to it. Treat it like
+one:
+
+- Adding an **optional** field with a safe default is a minor change.
+- Removing or renaming a field, changing a field's meaning, or making a field
+  required is a **breaking** change: bump `SUPPORTED_SCHEMA` in
+  `anma/contracts.py`, bump the tool's major version, and ship a migration path.
+- Never make the tool silently reinterpret existing contracts.
+
+## Code shape
+
+- Keep `cli.py` as the only place argparse/IO wiring lives; core modules
+  (`contracts`, `engine`, `compile`, `templates`, `scaffold`) must not import it.
+- `tach` stays optional — `engine.py` must keep working via the builtin checker
+  with zero extra dependencies.
+- Generated artifacts are produced by pure `render_*` functions in `compile.py`
+  so `anma sync` and `anma sync --check` share one code path. Keep them pure.
+
+## Reporting security issues
+
+See [SECURITY.md](SECURITY.md) — do not open public issues for vulnerabilities.

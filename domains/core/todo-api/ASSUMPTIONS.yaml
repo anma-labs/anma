@@ -1,9 +1,0 @@
-module: todo-api
-assumptions:
-  - id: postgresql_storage
-    category: todo-storage
-    content: "PostgreSQL with uuid primary keys, tags as JSONB array"
-
-  - id: user_limit
-    category: todo-limits
-    content: "Max 10,000 todos per user"

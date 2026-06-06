@@ -1,0 +1,15 @@
+name: anma
+summary: The ANMA tool itself — contracts compile to CLAUDE.md, hooks, and a boundary engine.
+public:
+  - anma.cli.main
+  - anma.contracts.load_project
+  - anma.contracts.validate
+  - anma.compile.sync
+  - anma.engine.check
+  - anma.scaffold.init_project
+depends_on: []
+owners:
+  - "@nxy"
+invariants:
+  - Core (contracts/engine) must not import the CLI.
+  - tach is optional; the builtin engine must always work with zero extra deps.

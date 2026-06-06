@@ -1,0 +1,6 @@
+name: billing
+summary: Invoices and payments.
+public:
+  - billing.service.create_invoice
+  - billing.service.total_invoiced
+depends_on: [accounts]

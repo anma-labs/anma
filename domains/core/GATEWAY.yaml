@@ -1,9 +1,0 @@
-domain: core
-version: 1
-exports:
-  - module: user-auth
-    interfaces: [register, login, verify_token, reset_password, delete_account]
-  - module: todo-api
-    interfaces: [create_todo, get_todos, update_todo, complete_todo, delete_todo]
-  - module: notifications
-    interfaces: [send_notification, get_notifications, mark_read, set_preferences]

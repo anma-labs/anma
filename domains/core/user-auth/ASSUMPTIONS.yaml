@@ -1,9 +1,0 @@
-module: user-auth
-assumptions:
-  - id: jwt_token_expiry
-    category: auth-infra
-    content: "JWT tokens with 1-hour expiry; refresh tokens handled server-side"
-
-  - id: password_hashing
-    category: auth-security
-    content: "bcrypt password hashing with cost factor 12"

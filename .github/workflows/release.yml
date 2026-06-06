@@ -1,0 +1,42 @@
+name: release
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write      # attach SBOM to the release
+  id-token: write      # OIDC for PyPI Trusted Publishing + attestations
+  attestations: write  # build provenance
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build distributions
+        run: |
+          pip install build
+          python -m build
+
+      - name: Generate CycloneDX SBOM
+        run: |
+          pip install cyclonedx-bom
+          cyclonedx-py environment --output-format json --outfile sbom.json
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: "dist/*"
+
+      - name: Attach SBOM to the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: sbom.json
+
+      # No API token: OIDC Trusted Publishing. Configure the publisher on PyPI.
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

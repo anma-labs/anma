@@ -1,0 +1,8 @@
+source_roots = ["."]
+
+[[modules]]
+path = "anma"
+depends_on = []
+[[interfaces]]
+expose = ["anma.cli.main", "anma.contracts.load_project", "anma.contracts.validate", "anma.compile.sync", "anma.engine.check", "anma.scaffold.init_project"]
+from = ["anma"]
