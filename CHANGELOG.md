@@ -7,6 +7,15 @@ All notable changes to ANMA are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.5.5] — 2026-06-06
+
+### Fixed
+- The generated CI workflow (`.github/workflows/anma.yml`) is now **seed-once and
+  not drift-checked**, like `settings.json` and `.pre-commit-config.yaml`. It is a
+  starting point users customize (e.g. the install path), so regenerating and
+  drift-checking it was wrong — a hand-edited CI file no longer fails
+  `anma sync --check`.
+
 ## [0.5.4] — 2026-06-06
 
 ### Changed
