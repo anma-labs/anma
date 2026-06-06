@@ -79,6 +79,15 @@ A large repo won't be clean on day one. Two levers:
 - Mark a not-yet-removable dependency as `deprecated_deps:` in the contract — it
   warns instead of failing, so you can ratchet toward compliance.
 
+## Where ANMA helps most
+
+The benchmark ([../docs/BENCHMARKS.md](../docs/BENCHMARKS.md)) shows the effect is
+model-dependent: a frontier model tends to respect a documented architecture on
+its own, while a cheaper/faster model violated a boundary ~68% of the time in a
+plain repo and 0/20 with ANMA. So you'll see the biggest difference when driving
+cheaper or weaker agents — and the enforcement hook plus CI gate hold regardless
+of which model or human wrote the change.
+
 ## Next
 
 - [CONCEPTS.md](CONCEPTS.md) — every field, every generated file, the engine.

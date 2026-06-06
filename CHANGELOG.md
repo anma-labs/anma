@@ -7,6 +7,17 @@ All notable changes to ANMA are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.5.4] — 2026-06-06
+
+### Changed
+- Documentation rewritten around the first hardened result (Claude Haiku 4.5,
+  `payments-boundary`, n=20: control 13/19 violations vs ANMA 0/20,
+  Fisher `p < 0.0001`). README, QUICKSTART, CONCEPTS, and BENCHMARKS now lead with
+  the evidence-backed, two-tier positioning — ANMA as insurance for cheaper agents
+  plus a CI/governance guarantee — and explicitly separate the benchmarked
+  *guidance* win from the separately-verified *enforcement* hook. The frontier
+  (Opus 4.8) null result is published rather than hidden.
+
 ## [0.5.3] — 2026-06-06
 
 ### Added

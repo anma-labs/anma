@@ -1,28 +1,22 @@
 # ANMA
 
-**Architecture contracts that keep Claude Code inside the lines.**
+**Boundary enforcement for AI coding agents.** ANMA turns plain-YAML module
+contracts into the `CLAUDE.md`, hooks, and checks that keep Claude Code inside
+your architecture — and it measurably works where it matters most.
 
-With ANMA, Claude Code makes fewer architectural mistakes, preserves your
-architecture across sessions, respects module boundaries, and coordinates
-parallel work better than a plain repo — because the boundaries are *declared
-once* and then **generated into the agent's context and enforced** at three
-points (in-session hook, pre-commit, CI).
+In a controlled benchmark, a cheaper/faster model (Claude Haiku 4.5) violated a
+declared module boundary in **13 of 19** runs of a plain repo. With ANMA, across
+20 runs of the same task it violated it **0 times** (Fisher's exact `p < 0.0001`).
+See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for the full study, including the
+honest part: a frontier model (Opus 4.8) respected the boundary on its own, so
+ANMA's value is **insurance for running cheaper agents** plus a CI/governance
+guarantee — not making a frontier model smarter.
 
-ANMA is deliberately lightweight. It does not invent a runtime, a DSL, or a pile
-of "principles." It is a thin layer over primitives that already exist:
+## What it does
 
-- **Claude Code's own memory + hooks** — a root `CLAUDE.md` is loaded every
-  session, nested `CLAUDE.md` files load when Claude opens that folder, and a
-  `PreToolUse` hook can *block* a bad edit before it lands.
-- **A real boundary engine** — [`tach`](https://github.com/tach-org/tach)
-  (Rust, fast, interface-aware) when installed, with a zero-dependency builtin
-  fallback so ANMA keeps working regardless.
-
-## The one idea
-
-Your module contracts are the single source of truth. `anma sync` compiles them
-into everything else, so the docs the agent reads can never drift from the rules
-the CI enforces.
+You declare each module's public interface and what it may depend on. `anma sync`
+compiles that into everything else, so the architecture the agent reads can never
+drift from the rules CI enforces:
 
 ```
 anma.yaml                       project config (schema_version, source_roots)
@@ -30,11 +24,10 @@ src/domains/billing/
   anma.yaml                     the module contract — see docs/CONCEPTS.md for all fields
   CLAUDE.md          (generated) loads when Claude opens billing/
 CLAUDE.md            (generated) architecture map, between markers
-.claude/rules/boundaries.md (generated) the imperative, always loaded
-.claude/hooks/anma_pretooluse.py (generated) blocks boundary-breaking edits
-.claude/settings.json (generated) wires the hook
+.claude/rules/boundaries.md (generated) always-loaded imperative
+.claude/hooks/anma_pretooluse.py (generated) blocks a boundary-breaking edit (exit 2)
 tach.toml            (generated) engine config
-.github/workflows/anma.yml (generated) CI
+.github/workflows/anma.yml (generated) CI: drift check + boundary check
 DECISIONS.md         append-only: why each boundary exists
 ```
 
@@ -47,78 +40,74 @@ anma sync                   # generates CLAUDE.md, nested docs, hooks, tach.toml
 anma check                  # ✓ boundaries respected
 ```
 
-Now open the project in Claude Code and ask it to make `accounts` import
-`billing` (which the example forbids): the `PreToolUse` hook returns exit code 2
-and the edit is blocked. Full walkthrough in [docs/QUICKSTART.md](docs/QUICKSTART.md).
+Full walkthrough: [docs/QUICKSTART.md](docs/QUICKSTART.md).
 
-## Three commands
+## Commands
 
 ```bash
-anma init             # scaffold contracts + a worked two-module example
-anma sync             # contracts -> CLAUDE.md, nested CLAUDE.md, rules, hooks, tach.toml, CI
-anma sync --check     # CI guard: fail if generated artifacts drifted from the contracts
-anma check            # enforce module boundaries (used by the hook, pre-commit, and CI)
+anma init             # scaffold contracts + a worked example
+anma sync             # regenerate all artifacts from contracts
+anma sync --check     # CI guard: fail if generated artifacts drifted from contracts
+anma check            # enforce boundaries (hook / pre-commit / CI)
 anma check --warn     # report violations but exit 0 (incremental adoption)
 anma check --json     # machine-readable output for pipelines
 ```
 
 Exit codes: `0` ok · `1` violations, contract errors, or drift.
 
-## How it hits each goal
+## Two layers: guidance and enforcement
 
-| Goal | Mechanism |
-|---|---|
-| Fewer architectural mistakes | Generated architecture map in root `CLAUDE.md` + per-module nested `CLAUDE.md` that loads exactly when Claude works there. |
-| Preserved across sessions | `CLAUDE.md` survives compaction and reloads every session; `DECISIONS.md` records *why*, so boundaries aren't relitigated. |
-| Respects module boundaries | Contracts declare `public` + `depends_on`; enforced in-session (PreToolUse hook, exit 2 = blocked), at pre-commit, and in CI. |
-| Coordinates parallel work | Declared public interfaces let parallel agents build against a stable contract, not internals; pairs with Claude Code git worktrees. |
+ANMA works at two levels, and the benchmark shows they play different roles:
 
-## Install
+- **Guidance** — the generated root and per-module `CLAUDE.md` and `.claude/rules`
+  put your architecture in the agent's context. This is what drove the 68% → 0
+  result: the model was steered to the correct design and didn't attempt a bad
+  edit.
+- **Enforcement** — the `PreToolUse` hook judges the *proposed* edit and returns
+  exit 2 to block any new disallowed import before it lands; the same check runs
+  at pre-commit and in CI. This is the guarantee that holds for the edits guidance
+  doesn't catch, and regardless of which model or human wrote the diff.
 
-```bash
-pip install anma          # builtin engine
-pip install anma[tach]    # recommended: tach engine (interface-level checks)
-```
+The enforcement hook is verified to fire (feed it a forbidden edit → `exit 2`); in
+the benchmark it never needed to, because guidance pre-empted every bad edit. Both
+matter; see the benchmarks for exactly what each one is shown to do.
 
-## Enterprise-ready by being small
+## Who it's for
 
-ANMA's enterprise story is not a feature list — it's that the whole tool is a
-few hundred lines a security team can read in an afternoon, with **zero required
-runtime dependencies** (the builtin engine needs nothing; `tach` is optional).
+- Teams running **cheaper or faster agents** (cost-sensitive pipelines, bulk
+  tasks, non-frontier or non-Claude models) that don't reliably respect an
+  architecture on their own — this is where ANMA's steering is decisive.
+- Anyone who wants an **enforced** architecture: a guarantee in CI/pre-commit that
+  module boundaries hold no matter who or what wrote the change.
+- Teams that want architecture as **governance**: declared interfaces, ownership →
+  CODEOWNERS, and docs that can't silently drift from the rules.
 
-- **Drift detection** — `anma sync --check` fails CI if the committed `CLAUDE.md`
-  / `tach.toml` ever fall out of sync with the contracts, so the docs the agent
-  reads can't silently diverge from the rules CI enforces.
+If you only ever drive a frontier model on small, well-described tasks, ANMA may
+add turns without changing outcomes — and the benchmarks say so plainly.
+
+## Lightweight by design
+
+~800 lines, no runtime, no DSL, **zero required dependencies** (the builtin engine
+needs nothing; `tach` is an optional, faster, interface-aware backend). A security
+team can read the whole tool in an afternoon.
+
+## Enterprise
+
+- **Drift detection** — `anma sync --check` fails CI if generated docs/config fall
+  out of sync with the contracts.
 - **Incremental adoption** — `anma check --warn` and per-module `deprecated_deps`
-  let a large existing codebase adopt without turning the build red on day one.
-- **Governance** — `owners:` per module generates `CODEOWNERS`; pair with branch
-  protection for review gates that match real boundaries.
-- **Monorepos** — `source_roots:` accepts multiple roots.
-- **Supply chain** — releases via PyPI Trusted Publishing with build-provenance
-  attestations and a CycloneDX SBOM; `pip-audit` in CI. See `SECURITY.md` for the
-  full model (ANMA never executes your code; the hook only blocks, never edits).
-
-## Stability
-
-The **contract schema** (`schema_version`) is your real API and follows SemVer
-independently of the tool version. This build supports `schema_version: 1`.
-Contracts written today keep working; breaking schema changes bump the major and
-ship a migration path.
-
-## Engine note
-
-`tach` is the default backend. If it is ever unavailable, ANMA falls back to a
-small `ast`-based dependency checker automatically — your contracts and the
-agent-facing layer don't change. The fork `dtach` is a drop-in alternative.
+  let a large codebase adopt without a red build on day one.
+- **Governance** — `owners:` per module generates `CODEOWNERS`; `source_roots:`
+  supports monorepos.
+- **Supply chain** — signed releases (PyPI Trusted Publishing + provenance + SBOM),
+  `pip-audit` in CI, Apache-2.0. See [SECURITY.md](SECURITY.md).
 
 ## Documentation
 
-- [docs/QUICKSTART.md](docs/QUICKSTART.md) — install to first blocked edit, step by step
+- [docs/QUICKSTART.md](docs/QUICKSTART.md) — install to first blocked edit
 - [docs/CONCEPTS.md](docs/CONCEPTS.md) — the model, the **contract schema reference**, generated artifacts, the engine
-- [docs/BENCHMARKS.md](docs/BENCHMARKS.md) — methodology + results for the with/without comparison
+- [docs/BENCHMARKS.md](docs/BENCHMARKS.md) — the with/without study, methodology, and honest limits
 - [CONTRIBUTING.md](CONTRIBUTING.md) — dev setup, tests, the dogfood, the schema-stability rule
-- [SECURITY.md](SECURITY.md) — security model and disclosure
-- [RELEASE.md](RELEASE.md) — rename + publishing runbook
-- [CHANGELOG.md](CHANGELOG.md) — release history
+- [SECURITY.md](SECURITY.md) · [RELEASE.md](RELEASE.md) · [CHANGELOG.md](CHANGELOG.md)
 
 Apache-2.0 · ANMA Labs LLC

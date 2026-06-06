@@ -75,6 +75,13 @@ Boundary enforcement sits behind a swappable adapter:
 
 ## How Claude Code uses it (the three enforcement points)
 
+ANMA operates at two levels: **guidance** (the generated `CLAUDE.md` files and
+rules that put your architecture in the agent's context) and **enforcement** (the
+hook + pre-commit + CI that mechanically reject a violation). In practice guidance
+prevents most bad edits before they happen; enforcement is the backstop for the
+rest and the guarantee that holds regardless of model or author. See
+[BENCHMARKS.md](BENCHMARKS.md) for what each layer is shown to do.
+
 1. **In-session** — the root `CLAUDE.md` (loaded every session, reloaded after
    compaction), nested `CLAUDE.md` (loaded when Claude opens a module), and the
    PreToolUse hook that *blocks* a violating edit before it lands.
