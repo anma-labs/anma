@@ -11,6 +11,7 @@ permissions:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    environment: pypi
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,7 +26,7 @@ jobs:
       - name: Generate CycloneDX SBOM
         run: |
           pip install cyclonedx-bom
-          cyclonedx-py environment --output-format json --outfile sbom.json
+          cyclonedx-py environment --output-format JSON --output-file sbom.json
 
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v1
@@ -40,3 +41,5 @@ jobs:
       # No API token: OIDC Trusted Publishing. Configure the publisher on PyPI.
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
