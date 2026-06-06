@@ -30,12 +30,17 @@ class RunResult:
     blocked: int = 0
     transcript: str = ""
     status: str = "ok"  # ok | no_change | error
+    has_hook: bool = False  # was the ANMA PreToolUse hook installed in this arm?
 
 
 def _stage(arm_dir: Path) -> Path:
     wd = Path(tempfile.mkdtemp(prefix="anma-bench-"))
     shutil.copytree(arm_dir, wd, dirs_exist_ok=True)
     return wd
+
+
+def _has_anma_hook(root: Path) -> bool:
+    return (root / ".claude" / "hooks" / "anma_pretooluse.py").exists()
 
 
 def _py_snapshot(root: Path) -> dict:
@@ -56,7 +61,8 @@ class ReplayRunner:
         if patch.exists():
             shutil.copytree(patch, wd, dirs_exist_ok=True)
             turns = 1
-        return RunResult(wd, arm, turns=turns, transcript="(replay)", status="ok")
+        return RunResult(wd, arm, turns=turns, transcript="(replay)",
+                         status="ok", has_hook=_has_anma_hook(wd))
 
 
 class ClaudeCodeRunner:
@@ -68,6 +74,7 @@ class ClaudeCodeRunner:
 
     def run(self, arm_dir: Path, task: str, arm: str) -> RunResult:
         wd = _stage(arm_dir)
+        has_hook = _has_anma_hook(wd)
         before = _py_snapshot(wd)
         cmd = ["claude", "-p", task, "--output-format", "json",
                "--permission-mode", "acceptEdits"]
@@ -77,7 +84,8 @@ class ClaudeCodeRunner:
             proc = subprocess.run(cmd, cwd=wd, capture_output=True, text=True,
                                   timeout=self.timeout)
         except (FileNotFoundError, subprocess.TimeoutExpired) as e:
-            return RunResult(wd, arm, status="error", transcript=f"runner error: {e}")
+            return RunResult(wd, arm, status="error", transcript=f"runner error: {e}",
+                             has_hook=has_hook)
 
         transcript = (proc.stdout or "") + (proc.stderr or "")
         turns = blocked = 0
@@ -85,20 +93,20 @@ class ClaudeCodeRunner:
         try:
             data = json.loads(proc.stdout)
             turns = int(data.get("num_turns", 0))
-            # hook blocks surface as permission denials on edit tools under acceptEdits
             denials = data.get("permission_denials", []) or []
-            blocked = sum(1 for d in denials
-                          if d.get("tool_name") in ("Edit", "Write", "MultiEdit"))
+            edit_denials = sum(1 for d in denials
+                               if d.get("tool_name") in ("Edit", "Write", "MultiEdit"))
+            # Only attribute a block to ANMA when its hook is actually installed.
+            blocked = edit_denials if has_hook else 0
             if data.get("is_error") or proc.returncode != 0:
                 status = "error"
         except (ValueError, TypeError):
             status = "error"
 
-        # Did the agent actually change any code? If not, it's not a "clean" pass.
         if status == "ok" and _py_snapshot(wd) == before:
             status = "no_change"
         return RunResult(wd, arm, turns=turns, blocked=blocked,
-                         transcript=transcript, status=status)
+                         transcript=transcript, status=status, has_hook=has_hook)
 
 
 def build_runner(name: str, scenario_dir: Path, model: str | None):

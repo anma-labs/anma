@@ -1,0 +1,7 @@
+name: orders
+summary: Order placement. Must not import inventory.
+public:
+  - orders.service.place_order
+depends_on: []
+invariants:
+  - orders must not import inventory; stock changes are coordinated by the caller.

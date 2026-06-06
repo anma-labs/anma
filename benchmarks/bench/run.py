@@ -46,7 +46,8 @@ def main(argv: list[str] | None = None) -> int:
                 res = runner.run(arm_dir, task, arm)
                 v = count_violations(res.workdir, spec)
                 records.append(TrialRecord(spath.name, arm, t, len(v),
-                                           res.turns, res.blocked, res.status))
+                                           res.turns, res.blocked, res.status,
+                                           res.has_hook))
                 flag = "" if res.status == "ok" else f"  <{res.status}>"
                 print(f"  {spath.name}/{arm} trial {t}: "
                       f"{len(v)} violation(s), {res.blocked} hook block(s), "

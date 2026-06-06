@@ -88,3 +88,28 @@ def test_runner_marks_missing_cli_as_error(monkeypatch):
     monkeypatch.setattr(R.subprocess, "run", boom)
     res = R.ClaudeCodeRunner().run(SCENARIOS / "payments-boundary" / "anma", "t", "anma")
     assert res.status == "error"
+
+
+def test_control_arm_blocks_not_attributed_to_anma(monkeypatch):
+    """A permission denial in the control arm (no hook) must NOT count as an ANMA block."""
+    import types, json as _json
+    import bench.runner as R
+    canned = _json.dumps({"is_error": False, "num_turns": 12,
+                          "permission_denials": [{"tool_name": "Edit"}]})
+    monkeypatch.setattr(R.subprocess, "run",
+                        lambda *a, **k: types.SimpleNamespace(
+                            stdout=canned, stderr="", returncode=0))
+    res = R.ClaudeCodeRunner().run(SCENARIOS / "payments-boundary" / "control", "t", "control")
+    assert res.has_hook is False
+    assert res.blocked == 0          # denial exists but is NOT attributed to ANMA
+
+
+def test_adversarial_scenario_discriminates():
+    from bench.scorer import load_spec, count_violations
+    from bench.runner import ReplayRunner
+    sc = SCENARIOS / "orders-inventory"
+    spec = load_spec(sc / "boundaries.yaml")
+    r = ReplayRunner(sc)
+    ctrl = count_violations(r.run(sc / "control", "t", "control").workdir, spec)
+    anma = count_violations(r.run(sc / "anma", "t", "anma").workdir, spec)
+    assert len(ctrl) >= 1 and len(anma) == 0

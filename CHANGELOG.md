@@ -7,6 +7,23 @@ All notable changes to ANMA are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.5.2] — 2026-06-06
+
+Follow-ups from the second live run (which showed the harness mis-attributing a
+control-arm permission denial as an ANMA hook block, and both arms tying at 0
+violations because a strong model passed the easy scenarios).
+
+### Fixed
+- Harness attributes hook blocks to ANMA **only when the ANMA hook is installed**
+  in that arm; the control arm now reports `—` for hook blocks instead of a
+  misleading count.
+
+### Added
+- `orders-inventory` adversarial scenario: the easy implementation crosses the
+  forbidden `orders → inventory` boundary and the correct path (caller-injected
+  callback) is non-obvious — designed so a capable model tends to slip in the
+  control arm, giving ANMA something to prevent.
+
 ## [0.5.1] — 2026-06-06
 
 Fixes from the first live `claude-code` benchmark run, which surfaced two real
