@@ -48,3 +48,17 @@ INVARIANT: `load_project` must never spawn a subprocess. It runs on every edit v
 the PreToolUse hook; shelling out per edit would be slow and would break the
 zero-dependency guarantee when `go`/`node` are absent. Guarded by
 `test_load_project_never_spawns_subprocess`.
+
+## 2026-06-06 — Phase 1 scope: one language per project
+
+`language` is set once in the root `anma.yaml` and applies to the whole project.
+Validated by dry-run: throwaway Go and TypeScript adapters slot into the v0.6.0
+`LanguageAdapter` interface with ZERO changes (including tsconfig alias + relative
+resolution and go.mod module paths), but a single tree cannot mix languages —
+one root config means one language.
+
+This is sufficient for single-language projects and single-target migrations,
+which are the Phase-1 goal. Per-source-root / polyglot-monorepo language (e.g. a
+Go backend and a TS frontend in one tree) is explicitly OUT of Phase 1 — a later
+phase with its own design, likely language declared per `source_root`. Adapters
+must not add per-module language handling in Phase 1.
