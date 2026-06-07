@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "anma"
-version = "0.6.0"
+version = "0.7.0"
 description = "Boundary enforcement for AI coding agents: plain-YAML module contracts compiled into CLAUDE.md, hooks, and CI checks that keep agents inside your architecture."
 readme = "README.md"
 requires-python = ">=3.10"
