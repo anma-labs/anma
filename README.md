@@ -1,7 +1,7 @@
 # ANMA
 
 [![PyPI](https://img.shields.io/pypi/v/anma)](https://pypi.org/project/anma/)
-[![Python](https://img.shields.io/pypi/pyversions/anma)](https://pypi.org/project/anma/)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.10-blue)](https://pypi.org/project/anma/)
 [![CI](https://github.com/anma-labs/anma/actions/workflows/ci.yml/badge.svg)](https://github.com/anma-labs/anma/actions/workflows/ci.yml)
 [![GitHub Action](https://img.shields.io/badge/Marketplace-anma--action-2ea44f?logo=github)](https://github.com/marketplace/actions/anma-boundary-check)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
