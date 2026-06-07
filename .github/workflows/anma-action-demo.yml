@@ -1,0 +1,21 @@
+name: anma-action-demo
+# Dogfood: run the PUBLISHED action (anma-labs/anma-action) against this repo as a
+# real-world smoke test and a "we use our own action" signal.
+#
+# This is intentionally NOT a required check. The gate-critical self-check is the
+# `dogfood` / `boundaries` jobs (which test the dev version about to be released);
+# this job exercises the released version through the action wrapper. Pinned to the
+# release this repo's generated artifacts correspond to — bump on each release.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: anma-labs/anma-action@v1
+        with:
+          version: "0.7.0"
