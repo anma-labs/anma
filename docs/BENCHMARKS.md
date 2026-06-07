@@ -8,6 +8,11 @@ plus a CI/governance guarantee — not making a frontier model smarter.
 
 Every number here is reproducible with the commands at the bottom.
 
+> **Scope:** all the headline/two-tier numbers below are **Python** (`tach`/`ast`
+> engine). Go and TypeScript ship their own scenarios with their own live run,
+> reported separately under [Other languages](#other-languages--go-and-typescript)
+> — those numbers are an honest null and are **not** the Python result.
+
 ## Method
 
 Each scenario gives the agent the **same task** in two arms:
@@ -62,6 +67,29 @@ At the frontier, ANMA shows no benefit on this axis.
 `cross-session-persistence` did not induce a violation in either arm at this n, so
 it neither supports nor refutes the persistence claim — stated plainly rather than
 spun.
+
+## Other languages — Go and TypeScript
+
+The Go and TypeScript adapters ship with their own boundary scenarios
+(`go-payments`, `ts-payments`) that mirror the Python `payments-boundary`
+temptation, scored by the **same independent, per-language scorer**. Live run on
+Claude Haiku 4.5 (`claude-haiku-4-5-20251001`), n=10 per arm, 2026-06-07:
+
+| Scenario | control | anma | mean turns (ctrl -> anma) |
+|---|---:|---:|---|
+| go-payments | 0.10 (1/10) | 0.00 (0/10) | 8.9 -> 11.9 |
+| ts-payments | 0.10 (1/10) | 0.00 (0/10) | 7.8 -> 10.5 |
+
+**This is a null/underpowered result, stated plainly.** The direction matches
+Python (anma 0, control > 0) but it is **not significant**: Fisher's exact is
+`p = 1.0` per language and `p ≈ 0.49` pooled. Haiku violated these control arms
+only ~10% of the time — far below the ~68% on the Python scenario — so there was
+little for ANMA to prevent here. The strong Python numbers are **not** transferred
+to Go/TS; a harder scenario and/or larger n is needed to measure a real effect.
+Backends exercised: TypeScript via `dependency-cruiser`; Go via the builtin scanner
+(no Go toolchain on the bench host — `go-arch-lint` is implemented, not exercised).
+Hook blocks were 0 (the agent never attempted a forbidden edit). Full method and
+the reproduce command are in [benchmarks/README.md](../benchmarks/README.md).
 
 ## Two layers, both verified
 
@@ -124,7 +152,9 @@ run) into the repo so the table is auditable, not asserted.
 
 - The headline is n=20 on one scenario with one cheaper model; broaden across more
   boundary shapes and other agents to generalize.
-- Single model family (Claude) and three hand-built scenarios.
+- Single model family (Claude). The headline is Python; the Go/TS scenarios are
+  wired and runnable but are a weak discriminator for Haiku 4.5 (low control
+  violation rate), so their numbers are a null result, not a measured Go/TS benefit.
 - The hook was never exercised *in the suite* (guidance pre-empted every bad
   edit); its blocking behavior is verified by the direct test above, not by the
   benchmark runs. A scenario that defeats guidance to force a live hook block is

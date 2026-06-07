@@ -4,13 +4,19 @@
 contracts into the `CLAUDE.md`, hooks, and checks that keep Claude Code inside
 your architecture — and it measurably works where it matters most.
 
-In a controlled benchmark, a cheaper/faster model (Claude Haiku 4.5) violated a
-declared module boundary in **13 of 19** runs of a plain repo. With ANMA, across
-20 runs of the same task it violated it **0 times** (Fisher's exact `p < 0.0001`).
-See [docs/BENCHMARKS.md](https://github.com/anma-labs/anma/blob/main/docs/BENCHMARKS.md) for the full study, including the
+In a controlled benchmark (Python), a cheaper/faster model (Claude Haiku 4.5)
+violated a declared module boundary in **13 of 19** runs of a plain repo. With
+ANMA, across 20 runs of the same task it violated it **0 times** (Fisher's exact
+`p < 0.0001`). See [docs/BENCHMARKS.md](https://github.com/anma-labs/anma/blob/main/docs/BENCHMARKS.md) for the full study, including the
 honest part: a frontier model (Opus 4.8) respected the boundary on its own, so
 ANMA's value is **insurance for running cheaper agents** plus a CI/governance
 guarantee — not making a frontier model smarter.
+
+**Languages:** Python, Go, and TypeScript (`language:` in the root `anma.yaml`,
+one per project). Go and TypeScript enforce module→module dependencies; interface
+(`public:`) enforcement is Python-only today. The benchmark above is Python — the
+Go/TS scenarios ship with their own live run, an honest null result, not the
+Python number. Details: [CONCEPTS § Languages](https://github.com/anma-labs/anma/blob/main/docs/CONCEPTS.md#languages).
 
 ## What it does
 
@@ -26,7 +32,7 @@ src/domains/billing/
 CLAUDE.md            (generated) architecture map, between markers
 .claude/rules/boundaries.md (generated) always-loaded imperative
 .claude/hooks/anma_pretooluse.py (generated) blocks a boundary-breaking edit (exit 2)
-tach.toml            (generated) engine config
+tach.toml            (generated) engine config (Go: .go-arch-lint.yml; TS: .dependency-cruiser.cjs)
 .github/workflows/anma.yml (generated) CI: drift check + boundary check
 DECISIONS.md         append-only: why each boundary exists
 ```
@@ -39,6 +45,10 @@ anma init                   # scaffolds contracts + a worked accounts/billing ex
 anma sync                   # generates CLAUDE.md, nested docs, hooks, tach.toml, CI
 anma check                  # ✓ boundaries respected
 ```
+
+For Go or TypeScript, scaffold with `anma init --language go` /
+`anma init --language typescript` (the external backends — `go-arch-lint`,
+`dependency-cruiser` — are optional; a builtin scanner is the zero-dep fallback).
 
 Full walkthrough: [docs/QUICKSTART.md](https://github.com/anma-labs/anma/blob/main/docs/QUICKSTART.md).
 
