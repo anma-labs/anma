@@ -128,3 +128,47 @@ def test_scenario_filter_rejects_unknown(tmp_path):
     import pytest
     with pytest.raises(SystemExit):
         main(["--runner", "replay", "--scenario", "does-not-exist", "--out", str(tmp_path)])
+
+
+# ---- multi-language scenarios: language-aware scorer discriminates arms ----- #
+def test_go_scenario_discriminates():
+    from bench.scorer import load_spec, count_violations
+    from bench.runner import ReplayRunner
+    sc = SCENARIOS / "go-payments"
+    spec = load_spec(sc / "boundaries.yaml")
+    assert spec.language == "go"
+    r = ReplayRunner(sc)
+    ctrl = count_violations(r.run(sc / "control", "t", "control").workdir, spec)
+    anma = count_violations(r.run(sc / "anma", "t", "anma").workdir, spec)
+    assert len(ctrl) >= 1 and len(anma) == 0
+    assert ctrl[0].module == "accounts" and ctrl[0].imported == "billing"
+
+
+def test_ts_scenario_discriminates():
+    from bench.scorer import load_spec, count_violations
+    from bench.runner import ReplayRunner
+    sc = SCENARIOS / "ts-payments"
+    spec = load_spec(sc / "boundaries.yaml")
+    assert spec.language == "typescript"
+    r = ReplayRunner(sc)
+    ctrl = count_violations(r.run(sc / "control", "t", "control").workdir, spec)
+    anma = count_violations(r.run(sc / "anma", "t", "anma").workdir, spec)
+    assert len(ctrl) >= 1 and len(anma) == 0
+    assert ctrl[0].module == "accounts" and ctrl[0].imported == "billing"
+
+
+def test_scorer_stays_independent_of_anma():
+    """The scorer must NOT import anma — it grades against boundaries.yaml with its
+    own parsers, so the tool under measurement cannot grade itself. Checked in a
+    fresh interpreter so an unrelated earlier import can't mask a regression."""
+    import subprocess
+    import sys
+    code = (
+        "import bench.scorer, sys; "
+        "leaked = sorted(m for m in sys.modules if m == 'anma' or m.startswith('anma.')); "
+        "assert not leaked, leaked; print('ok')"
+    )
+    proc = subprocess.run([sys.executable, "-c", code],
+                          cwd=str(Path(__file__).resolve().parents[1]),
+                          capture_output=True, text=True)
+    assert proc.returncode == 0, (proc.stdout + proc.stderr)

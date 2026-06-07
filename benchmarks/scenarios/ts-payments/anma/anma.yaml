@@ -1,0 +1,4 @@
+schema_version: 1
+language: typescript
+source_roots:
+  - src

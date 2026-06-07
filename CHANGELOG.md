@@ -42,6 +42,19 @@ All notable changes to ANMA are documented here. Format follows
   TS `test_load_project_never_spawns_subprocess`).
 - `pyproject` optional-dependency group `[ts]` (empty: dependency-cruiser is an npm
   package, not a PyPI one — the builtin fallback needs nothing).
+- **Multi-language benchmark harness + scenarios.** The scorer
+  (`benchmarks/bench/scorer.py`) is now language-aware via an optional `language:`
+  field in `boundaries.yaml` (Python `ast`; Go/TypeScript via independent stdlib
+  scanners) — still **not** importing `anma`, so independence holds per language.
+  New `go-payments` and `ts-payments` scenarios mirror the Python
+  `payments-boundary` boundary. A guard test fails if `bench.scorer` ever imports
+  `anma`. The Python path is unchanged (the original 11 harness tests stay green).
+- Live results (Claude Haiku 4.5, n=10/arm, 2026-06-07): control 1/10 violations
+  vs ANMA 0/10 for **both** Go and TypeScript — directionally consistent with
+  Python but **not statistically significant** (Fisher `p = 1.0` per language),
+  because Haiku violated these scenarios only ~10% of the time in control. Published
+  as a null/underpowered result; the strong Python numbers are not extrapolated to
+  Go/TS. See `benchmarks/README.md`.
 
 ## [0.6.0] — 2026-06-06
 
