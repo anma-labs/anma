@@ -11,7 +11,7 @@ from pathlib import Path
 from .report import (TrialRecord, aggregate, discover_scenarios, load_task,
                      to_json, to_markdown)
 from .runner import build_runner
-from .scorer import count_violations, load_spec
+from .scorer import count_violations, load_spec, source_globs
 
 ARMS = ("control", "anma")
 
@@ -47,7 +47,7 @@ def main(argv: list[str] | None = None) -> int:
     for spath in scen_paths:
         task = load_task(spath)
         spec = load_spec(spath / "boundaries.yaml")
-        runner = build_runner(a.runner, spath, a.model)
+        runner = build_runner(a.runner, spath, a.model, source_globs(spec.language))
         for arm in ARMS:
             arm_dir = spath / arm
             if not arm_dir.exists():

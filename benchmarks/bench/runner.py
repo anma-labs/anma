@@ -43,9 +43,13 @@ def _has_anma_hook(root: Path) -> bool:
     return (root / ".claude" / "hooks" / "anma_pretooluse.py").exists()
 
 
-def _py_snapshot(root: Path) -> dict:
+def _snapshot(root: Path, globs: tuple[str, ...] = ("*.py",)) -> dict:
     return {str(p.relative_to(root)): p.read_text(errors="ignore")
-            for p in sorted(root.rglob("*.py"))}
+            for g in globs for p in sorted(root.rglob(g))}
+
+
+def _py_snapshot(root: Path) -> dict:  # back-compat alias (Python default)
+    return _snapshot(root, ("*.py",))
 
 
 class ReplayRunner:
@@ -68,14 +72,16 @@ class ReplayRunner:
 class ClaudeCodeRunner:
     name = "claude-code"
 
-    def __init__(self, model: str | None = None, timeout: int = 900):
+    def __init__(self, model: str | None = None, timeout: int = 900,
+                 source_globs: tuple[str, ...] = ("*.py",)):
         self.model = model
         self.timeout = timeout
+        self.source_globs = source_globs  # which files count for no_change detection
 
     def run(self, arm_dir: Path, task: str, arm: str) -> RunResult:
         wd = _stage(arm_dir)
         has_hook = _has_anma_hook(wd)
-        before = _py_snapshot(wd)
+        before = _snapshot(wd, self.source_globs)
         cmd = ["claude", "-p", task, "--output-format", "json",
                "--permission-mode", "acceptEdits"]
         if self.model:
@@ -103,15 +109,16 @@ class ClaudeCodeRunner:
         except (ValueError, TypeError):
             status = "error"
 
-        if status == "ok" and _py_snapshot(wd) == before:
+        if status == "ok" and _snapshot(wd, self.source_globs) == before:
             status = "no_change"
         return RunResult(wd, arm, turns=turns, blocked=blocked,
                          transcript=transcript, status=status, has_hook=has_hook)
 
 
-def build_runner(name: str, scenario_dir: Path, model: str | None):
+def build_runner(name: str, scenario_dir: Path, model: str | None,
+                 source_globs: tuple[str, ...] = ("*.py",)):
     if name == "replay":
         return ReplayRunner(scenario_dir)
     if name == "claude-code":
-        return ClaudeCodeRunner(model=model)
+        return ClaudeCodeRunner(model=model, source_globs=source_globs)
     raise SystemExit(f"unknown runner: {name}")

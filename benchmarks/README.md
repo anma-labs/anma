@@ -19,6 +19,9 @@ The agent's final code is then scored by an **independent** counter
 (`bench/scorer.py`) that does **not** import `anma`. It counts disallowed
 cross-module imports against the scenario's declared graph
 (`boundaries.yaml`) — so the benchmark is not graded by the tool it measures.
+This independence holds **per language**: Python is scored with `ast`, Go and
+TypeScript with small stdlib-`re` scanners that are separate implementations from
+anma's adapters, so a parsing bug in anma cannot hide itself in the score.
 
 Reported per arm: mean/total violations, mean turns, and (live runner only) the
 number of edits the ANMA hook blocked.
@@ -58,14 +61,21 @@ Create `scenarios/<name>/` with:
 
 - `task.md` — the prompt given to the agent (identical across arms).
 - `boundaries.yaml` — the ground-truth allowed dependency graph (the scorer's
-  judge).
+  judge). Optional `language:` (`python` default, or `go` / `typescript`); for Go
+  also set `module_prefix:` (the `go.mod` module path) so import paths reduce to
+  the slash-style `path:` values.
 - `control/` and `anma/` — the two repo arms (same source; `anma/` adds contracts
-  + `anma sync` output).
+  + `anma sync` output, which is the language's native engine config —
+  `.go-arch-lint.yml` / `.dependency-cruiser.cjs` instead of `tach.toml`).
 - `replay/<arm>/` — optional recorded edits for the offline self-test.
 
 Design tasks that *tempt* a boundary crossing — where the easy path violates the
 architecture and the correct path respects it. That is where ANMA either helps
 or it doesn't, and the harness will tell you which.
+
+The bundled language scenarios mirror the same accounts/billing boundary:
+`payments-boundary` (Python), `go-payments` (Go), `ts-payments` (TypeScript). Each
+tempts the agent to add a forbidden `accounts → billing` import.
 
 ## Honest limits
 
