@@ -1,4 +1,10 @@
-"""`anma init`: create a minimal, runnable starting point with a worked example."""
+"""`anma init`: create a minimal, runnable starting point with a worked example.
+
+The example is language-specific (``--language``): the same accounts/billing graph
+where ``billing`` may import ``accounts`` but not vice-versa, written idiomatically
+per language. The contract *graph* is identical across languages — only the source
+files and the root config's ``language``/metadata differ.
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -49,16 +55,83 @@ def create_invoice(user_id: str, amount: int) -> dict:
 }
 
 
-def init_project(root: Path) -> list[str]:
+GO_ROOT_YAML = """# ANMA project config (Go). Modules are discovered from per-directory anma.yaml.
+schema_version: 1
+language: go
+source_roots:        # for Go this is the go.mod directory
+  - .
+"""
+
+GO_EXAMPLE = {
+    "go.mod": "module example.com/shop\n\ngo 1.22\n",
+    "domains/accounts/anma.yaml": """name: accounts
+summary: User accounts and authentication.
+public:
+  - accounts.GetUser
+  - accounts.Authenticate
+depends_on: []
+invariants:
+  - Password hashes never leave this module.
+""",
+    "domains/accounts/service.go": """package accounts
+
+// GetUser returns a user's basic info.
+func GetUser(userID string) map[string]string {
+\treturn map[string]string{"id": userID, "name": "Ada"}
+}
+
+// Authenticate reports whether a token is valid.
+func Authenticate(token string) bool {
+\treturn token != ""
+}
+""",
+    "domains/billing/anma.yaml": """name: billing
+summary: Invoices and payment processing.
+public:
+  - billing.CreateInvoice
+depends_on:
+  - accounts            # billing may use accounts' public interface
+invariants:
+  - Never store raw card numbers.
+""",
+    "domains/billing/service.go": """package billing
+
+import "example.com/shop/domains/accounts" // billing may import accounts (allowed)
+
+// CreateInvoice creates an invoice for a user.
+func CreateInvoice(userID string, amount int) map[string]any {
+\tuser := accounts.GetUser(userID)
+\treturn map[string]any{"user": user["id"], "amount": amount}
+}
+""",
+}
+
+# language -> (root anma.yaml, {relative path: content}). New languages append here.
+SCAFFOLDS: dict[str, tuple[str, dict[str, str]]] = {
+    "python": (ROOT_YAML, EXAMPLE),
+    "go": (GO_ROOT_YAML, GO_EXAMPLE),
+}
+
+
+def init_project(root: Path, language: str = "python") -> list[str]:
+    try:
+        root_yaml, example = SCAFFOLDS[language]
+    except KeyError:
+        supported = ", ".join(sorted(SCAFFOLDS))
+        raise ValueError(
+            f"no `anma init` scaffold for language '{language}'. "
+            f"Available: {supported}."
+        ) from None
+
     created: list[str] = []
     root.mkdir(parents=True, exist_ok=True)
 
     rc = root / "anma.yaml"
     if not rc.exists():
-        rc.write_text(ROOT_YAML)
+        rc.write_text(root_yaml)
         created.append(str(rc))
 
-    for rel, content in EXAMPLE.items():
+    for rel, content in example.items():
         path = root / rel
         if path.exists():
             continue

@@ -113,3 +113,15 @@ def get_adapter(language: str) -> "LanguageAdapter":
 def any_adapter_handles(file: Path) -> bool:
     """True if *any* registered language owns this file type (cheap hook pre-filter)."""
     return any(a.handles_file(file) for a in ADAPTERS.values())
+
+
+# --------------------------------------------------------------------------- #
+# Language adapters that live in their own leaf modules self-register here at    #
+# import time, so a single `import anma.adapters` (done by the CLI and the hook) #
+# makes them available with no extra wiring. They import only engine + contracts #
+# — never this module — so there is no import cycle and the neutral layers are    #
+# untouched.                                                                     #
+# --------------------------------------------------------------------------- #
+from .lang_go import GoAdapter  # noqa: E402
+
+register_adapter(GoAdapter())

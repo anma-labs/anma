@@ -7,6 +7,23 @@ All notable changes to ANMA are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+- **Go language adapter** (`anma/lang_go.py`): first-class `language: go` support
+  for `init` / `sync` / `check`, plugged into the v0.6.0 `LanguageAdapter` seam
+  with **no changes to the neutral layers**. Import identity is the `go.mod`
+  module path plus the package directory (`example.com/app/domains/billing`);
+  the import→module resolver uses a `/`-boundary and lives in the adapter.
+- Go enforcement wraps `go-arch-lint` as the external backend and falls back to a
+  zero-dependency builtin import scanner (real line numbers) when the Go toolchain
+  is absent — mirroring the tach/builtin pattern. Enforcement is **module→module
+  only** (symbol-level `public:` remains Python/tach-only).
+- `anma init --language go` scaffolds a runnable Go worked example; `sync`
+  generates `.go-arch-lint.yml` (in place of `tach.toml`) and a Go-flavored CI
+  workflow. `go.mod` is read with a plain file read at load (no subprocess), so the
+  per-edit hook path stays pure (guarded by a Go `test_load_project_never_spawns_subprocess`).
+- `pyproject` optional-dependency group `[go]` (empty: `go-arch-lint` is a Go
+  binary, not a PyPI package — the builtin fallback needs nothing).
+
 ## [0.6.0] — 2026-06-06
 
 ### Added
