@@ -198,3 +198,68 @@ def test_engine_name_falls_back_to_builtin_without_node(ts_project, monkeypatch)
     import anma.lang_ts as lt
     monkeypatch.setattr(lt.shutil, "which", lambda _name: None)
     assert get_adapter("typescript").engine_name(ts_project) == "builtin"
+
+
+# ---- scanner skips comments + string/template literals (hook false-positive guard) -- #
+_BILL = "../billing/service"
+
+
+def test_scan_ignores_line_comment():
+    assert list(scan_imports(f'// import {{ x }} from "{_BILL}";\n')) == []
+
+
+def test_scan_ignores_block_comment():
+    assert list(scan_imports(f'/*\nimport {{ x }} from "{_BILL}";\n*/\n')) == []
+
+
+def test_scan_ignores_string_literal():
+    # double-quoted string whose contents look like an import (with inner quotes)
+    assert list(scan_imports(f"const s = \"import {{ x }} from '{_BILL}'\";\n")) == []
+
+
+def test_scan_ignores_template_literal():
+    src = f'const t = `\nimport {{ x }} from "{_BILL}";\n`;\n'
+    assert list(scan_imports(src)) == []
+
+
+def test_scan_does_not_flag_variable_named_from():
+    # masking must not turn `const from = "..."` into an import edge
+    assert list(scan_imports(f'const from = "{_BILL}";\n')) == []
+
+
+def test_scan_detects_real_import_from():
+    assert list(scan_imports(f'import {{ x }} from "{_BILL}";\n')) == [(_BILL, 1)]
+
+
+def test_scan_detects_import_type_require_dynamic():
+    src = (f'import type {{ T }} from "{_BILL}";\n'
+           f'const a = require("{_BILL}");\n'
+           f'const b = await import("{_BILL}");\n')
+    assert {s for s, _ in scan_imports(src)} == {_BILL}
+
+
+# ---- the hook must NOT block an edit whose "import" is only a comment/string/template
+def test_hook_allows_commented_out_violation(ts_project):
+    acc = ts_project.root / "src/domains/accounts/service.ts"
+    body = acc.read_text() + f'\n// import {{ totalInvoiced }} from "{_BILL}";\n'
+    assert run_hook(_payload("Write", acc, content=body)) == ALLOW
+
+
+def test_hook_allows_import_text_in_template(ts_project):
+    acc = ts_project.root / "src/domains/accounts/service.ts"
+    body = acc.read_text() + f'\nconst doc = `import {{ x }} from "{_BILL}";`;\n'
+    assert run_hook(_payload("Write", acc, content=body)) == ALLOW
+
+
+def test_hook_allows_import_text_in_string(ts_project):
+    acc = ts_project.root / "src/domains/accounts/service.ts"
+    body = acc.read_text() + f"\nconst s = \"import {{ x }} from '{_BILL}'\";\n"
+    assert run_hook(_payload("Write", acc, content=body)) == ALLOW
+
+
+def test_hook_still_blocks_real_violation_with_decoy(ts_project):
+    acc = ts_project.root / "src/domains/accounts/service.ts"
+    body = (f'// import {{ totalInvoiced }} from "{_BILL}";  (decoy)\n'
+            f'import {{ totalInvoiced }} from "{_BILL}";\n'
+            + acc.read_text())
+    assert run_hook(_payload("Write", acc, content=body)) == BLOCK

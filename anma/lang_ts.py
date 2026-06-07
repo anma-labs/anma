@@ -34,10 +34,15 @@ from .contracts import ModuleContract, Project
 
 # --------------------------------------------------------------------------- #
 # Lightweight, dependency-free import detector (builtin fallback + hook path).   #
-# Scans the whole source so it tolerates multi-line import statements, and       #
-# computes a real 1-based line number from each match offset. NOT a TS parser:   #
-# it does not understand comments-containing-import-text or template strings —    #
-# acceptable because the hook fails OPEN and dependency-cruiser is the hard gate. #
+# The proven specifier regexes run over a MASKED copy of the source where `//`   #
+# and `/* */` comments and backtick template literals are blanked and the        #
+# CONTENTS of '…'/"…" strings are replaced by recoverable sentinels. So a regex   #
+# can never match an import inside a comment or string, real specifiers are still #
+# recovered, and line numbers are preserved (newlines are never removed). This    #
+# matters because this feeds disallowed_targets in the edit-blocking PreToolUse   #
+# hook, where a false positive would wrongly block a legitimate edit. NOT a full  #
+# TS parser (regex literals are not special-cased); the hook fails OPEN and       #
+# dependency-cruiser is the hard gate.                                            #
 # --------------------------------------------------------------------------- #
 _RE_FROM = re.compile(r"""(?:import|export)\b[^;'"]*?\bfrom\s*['"]([^'"]+)['"]""")
 _RE_SIDE_EFFECT = re.compile(r"""(?m)^\s*import\s+['"]([^'"]+)['"]""")
@@ -45,17 +50,68 @@ _RE_REQUIRE = re.compile(r"""require\(\s*['"]([^'"]+)['"]\s*\)""")
 _RE_DYNAMIC = re.compile(r"""\bimport\(\s*['"]([^'"]+)['"]\s*\)""")
 
 
+def _mask_noncode(source: str):
+    """Return ``(masked, specs)``. ``masked`` blanks comments + template literals
+    (newlines kept) and replaces each '…'/"…" string's content with a sentinel
+    ``\\x00<idx>\\x00`` recorded in ``specs`` — so the regexes see real import
+    specifiers but never import-looking text inside a comment/string/template."""
+    out: list[str] = []
+    specs: list[str] = []
+    i, n = 0, len(source)
+    while i < n:
+        c = source[i]
+        if c == "/" and i + 1 < n and source[i + 1] == "/":          # line comment
+            out.append("  "); i += 2
+            while i < n and source[i] != "\n":
+                out.append(" "); i += 1
+            continue
+        if c == "/" and i + 1 < n and source[i + 1] == "*":          # block comment
+            out.append("  "); i += 2
+            while i + 1 < n and not (source[i] == "*" and source[i + 1] == "/"):
+                out.append("\n" if source[i] == "\n" else " "); i += 1
+            out.append("  "); i += 2
+            continue
+        if c == "`":                                                 # template literal
+            out.append(" "); i += 1
+            while i < n and source[i] != "`":
+                if source[i] == "\\" and i + 1 < n:
+                    out.append("  "); i += 2; continue
+                out.append("\n" if source[i] == "\n" else " "); i += 1
+            out.append(" "); i += 1
+            continue
+        if c == "'" or c == '"':                                     # string literal
+            q, i, val = c, i + 1, []
+            while i < n and source[i] != q:
+                if source[i] == "\\" and i + 1 < n:
+                    val.append(source[i + 1]); i += 2; continue
+                if source[i] == "\n":                                # raw newline: bail out
+                    break
+                val.append(source[i]); i += 1
+            i += 1  # closing quote
+            idx = len(specs); specs.append("".join(val))
+            out.append(f"{q}\x00{idx}\x00{q}")
+            continue
+        out.append(c); i += 1
+    return "".join(out), specs
+
+
 def scan_imports(source: str):
-    """Yield ``(specifier, lineno)`` for TS/JS imports in ``source``.
+    """Yield ``(specifier, lineno)`` for real TS/JS imports in ``source``.
 
     Covers ``import … from``, ``import type … from``, ``export … from``, bare
-    ``import '…'``, ``require('…')`` and dynamic ``import('…')``.
+    ``import '…'``, ``require('…')`` and dynamic ``import('…')`` — ignoring any
+    that appear inside comments, strings, or template literals.
     """
+    masked, specs = _mask_noncode(source)
     seen: set[tuple[str, int]] = set()
     for rx in (_RE_FROM, _RE_SIDE_EFFECT, _RE_REQUIRE, _RE_DYNAMIC):
-        for m in rx.finditer(source):
-            spec = m.group(1)
-            lineno = source.count("\n", 0, m.start()) + 1
+        for m in rx.finditer(masked):
+            token = m.group(1)
+            try:
+                spec = specs[int(token.strip("\x00"))]
+            except (ValueError, IndexError):
+                continue  # not a sentinel — defensive, shouldn't happen
+            lineno = masked.count("\n", 0, m.start()) + 1
             key = (spec, lineno)
             if key not in seen:
                 seen.add(key)
