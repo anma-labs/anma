@@ -15,6 +15,10 @@ All notable changes to ANMA are documented here. Format follows
   ships today (delegating to `anma.engine`); Go and TypeScript adapters plug in
   without touching the neutral layers. Contracts gain an optional `language:`
   field (defaults to `python`; existing contracts are unaffected).
+- Per-language metadata is read once at load into `Project.metadata` (plain file
+  reads — `go.mod`, `tsconfig.json`; no tools). `import_identity` is a pure
+  derivation from that cache, so `load_project` (which runs in the per-edit hook)
+  never spawns a subprocess; heavy resolution stays in `check()`. Guarded by test.
 - The contract *graph* (`name`, `depends_on`, `invariants`, `owners`) is
   language-neutral; import identity, the `public:` surface, engine config, and CI
   are language-native and adapter-derived (see DECISIONS.md).

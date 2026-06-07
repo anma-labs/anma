@@ -297,7 +297,8 @@ def test_engine_dispatch_is_extensible(project, monkeypatch):
         language = "fake"
         file_globs = ("*.fake",)
         def handles_file(self, file): return file.name.endswith(".fake")
-        def import_identity(self, module, source_root): return module.name
+        def load_metadata(self, project_root): return {"k": "v"}
+        def import_identity(self, module, source_root, metadata): return module.name
         def check(self, project, backend=None):
             calls["check"] += 1; return [Violation("m", "f.fake", 1, "fake violation")]
         def disallowed_targets(self, project, module, file, source):
@@ -323,3 +324,16 @@ def test_engine_dispatch_is_extensible(project, monkeypatch):
     payload = _j.dumps({"tool_name": "Write",
                         "tool_input": {"file_path": str(f), "content": "import billing"}})
     assert run_hook(payload) == BLOCK and calls["dt"] >= 1
+
+
+def test_load_project_never_spawns_subprocess(project, monkeypatch):
+    """Invariant: load_project (which runs in the per-edit hook) must be pure —
+    no shelling out. import_identity derives from cached metadata, not tools."""
+    import subprocess
+    def boom(*a, **k):
+        raise AssertionError("load_project must not spawn a subprocess")
+    monkeypatch.setattr(subprocess, "run", boom)
+    monkeypatch.setattr(subprocess, "Popen", boom)
+    p = load_project(project.root)            # must succeed with subprocess disabled
+    assert p.by_name()["billing"].import_path == "domains.billing"
+    assert isinstance(p.metadata, dict)

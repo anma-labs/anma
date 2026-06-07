@@ -29,3 +29,22 @@ Consequence: symbol-level `public:` enforcement is Python-only at first (tach
 enforces interfaces; dependency-cruiser/go-arch-lint enforce module→module). For
 Go/TS, `public:` drives guidance and module-level enforcement until symbol-level
 lands. Docs must not imply symbol-level enforcement that isn't shipped.
+
+## 2026-06-06 — Import-identity derivation timing (two tiers, never in the hot path)
+
+Resolved before the Go/TS fan-out because it lives in `load_project`, a shared
+seam every adapter, the hook, compile, and the harness call.
+
+1. `import_identity` is PURE and dependency-free — it derives the native path from
+   the module location plus cached project metadata (Go: `go.mod` module path; TS:
+   tsconfig `baseUrl`/`paths`), NOT by invoking `go list` or `dependency-cruiser`.
+2. Metadata is read ONCE at load into `Project.metadata` via the adapter's
+   `load_metadata` — plain file reads of small declarative files, no tools.
+3. The external resolvers (`go list`, `dependency-cruiser`) are confined to
+   `check()` (the deliberate full scan), never `load_project` or the hook. The
+   hook's `disallowed_targets` uses pure import-statement detection.
+
+INVARIANT: `load_project` must never spawn a subprocess. It runs on every edit via
+the PreToolUse hook; shelling out per edit would be slow and would break the
+zero-dependency guarantee when `go`/`node` are absent. Guarded by
+`test_load_project_never_spawns_subprocess`.
