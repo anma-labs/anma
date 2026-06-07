@@ -24,7 +24,6 @@ Design (see DECISIONS.md):
 """
 from __future__ import annotations
 
-import re
 import shutil
 import subprocess
 from fnmatch import fnmatch
@@ -35,42 +34,107 @@ from .contracts import ModuleContract, Project
 
 # --------------------------------------------------------------------------- #
 # Lightweight, dependency-free import scanner (used by the builtin fallback and #
-# by the per-edit hook). NOT a Go parser — a deliberately small line scanner.   #
-# Handles single imports and grouped `import ( ... )` blocks, optional alias /   #
-# `_` / `.` prefixes, and skips line comments. Documented limitations: it does   #
-# not understand build tags, backtick raw strings, or `import (...)` collapsed   #
-# onto one line — acceptable because the hook fails OPEN and CI is the hard gate.#
+# by the per-edit hook). NOT a full Go parser, but a small char-level lexer that #
+# skips `//` and `/* */` comments and string/rune/raw-string literals BEFORE     #
+# detecting imports, so import-looking text inside a comment or a string is never #
+# mistaken for an import. That matters because this feeds disallowed_targets in   #
+# the edit-blocking PreToolUse hook, where a false positive would wrongly block a #
+# legitimate edit. Handles single imports, grouped `import ( ... )` blocks        #
+# (including collapsed one-line `import ( "a"; "b" )`), and alias / `_` / `.`     #
+# prefixes. Remaining limit: build-constraint comments are not interpreted (the   #
+# hook fails OPEN and CI is the hard gate).                                       #
 # --------------------------------------------------------------------------- #
-_QUOTED = re.compile(r'"([^"]+)"')
+def _go_tokens(source: str):
+    """Yield ``(kind, value, lineno)`` for the tokens that matter to import parsing.
+
+    Comments and the *contents* of string/rune literals are consumed and never
+    surface as code; string literals (interpreted ``"..."`` and raw `` `...` ``)
+    become STRING tokens carrying their unquoted value. Kinds: IMPORT, STRING,
+    LPAREN, RPAREN.
+    """
+    i, n, line = 0, len(source), 1
+    while i < n:
+        c = source[i]
+        if c == "\n":
+            line += 1; i += 1; continue
+        if c.isspace():
+            i += 1; continue
+        if c == "/" and i + 1 < n and source[i + 1] == "/":          # line comment
+            i += 2
+            while i < n and source[i] != "\n":
+                i += 1
+            continue
+        if c == "/" and i + 1 < n and source[i + 1] == "*":          # block comment
+            i += 2
+            while i + 1 < n and not (source[i] == "*" and source[i + 1] == "/"):
+                if source[i] == "\n":
+                    line += 1
+                i += 1
+            i += 2
+            continue
+        if c == "`":                                                 # raw string literal
+            start, i, val = line, i + 1, []
+            while i < n and source[i] != "`":
+                if source[i] == "\n":
+                    line += 1
+                val.append(source[i]); i += 1
+            i += 1
+            yield "STRING", "".join(val), start
+            continue
+        if c == '"':                                                 # interpreted string
+            start, i, val = line, i + 1, []
+            while i < n and source[i] != '"':
+                if source[i] == "\\" and i + 1 < n:
+                    val.append(source[i + 1]); i += 2; continue
+                if source[i] == "\n":
+                    line += 1
+                val.append(source[i]); i += 1
+            i += 1
+            yield "STRING", "".join(val), start
+            continue
+        if c == "'":                                                 # rune literal
+            i += 1
+            while i < n and source[i] != "'":
+                i += 2 if (source[i] == "\\" and i + 1 < n) else 1
+            i += 1
+            continue
+        if c == "(":
+            yield "LPAREN", "(", line; i += 1; continue
+        if c == ")":
+            yield "RPAREN", ")", line; i += 1; continue
+        if c.isalpha() or c == "_":                                  # identifier / keyword
+            j = i
+            while j < n and (source[j].isalnum() or source[j] == "_"):
+                j += 1
+            if source[i:j] == "import":
+                yield "IMPORT", "import", line
+            i = j
+            continue
+        i += 1
 
 
 def scan_imports(source: str):
-    """Yield ``(import_path, lineno)`` for Go imports in ``source``."""
-    in_block = False
-    for lineno, raw in enumerate(source.splitlines(), start=1):
-        s = raw.strip()
-        if not in_block:
-            if s.startswith("import (") or s.startswith("import("):
-                in_block = True
-                # tolerate `import ( "fmt"` with a path on the opener line
-                rest = s.split("(", 1)[1]
-                m = _QUOTED.search(rest)
-                if m:
-                    yield m.group(1), lineno
-                continue
-            if s.startswith("import ") or s.startswith("import\t"):
-                m = _QUOTED.search(s)
-                if m:
-                    yield m.group(1), lineno
-        else:
-            if s.startswith(")"):
-                in_block = False
-                continue
-            if s.startswith("//"):
-                continue
-            m = _QUOTED.search(s)
-            if m:
-                yield m.group(1), lineno
+    """Yield ``(import_path, lineno)`` for real Go imports in ``source``."""
+    toks = list(_go_tokens(source))
+    k = 0
+    while k < len(toks):
+        if toks[k][0] != "IMPORT":
+            k += 1
+            continue
+        k += 1
+        if k < len(toks) and toks[k][0] == "LPAREN":                 # grouped block
+            k += 1
+            while k < len(toks) and toks[k][0] != "RPAREN":
+                if toks[k][0] == "STRING":
+                    yield toks[k][1], toks[k][2]
+                k += 1
+            k += 1  # consume RPAREN
+        else:                                                        # single import
+            while k < len(toks) and toks[k][0] not in ("STRING", "IMPORT"):
+                k += 1
+            if k < len(toks) and toks[k][0] == "STRING":
+                yield toks[k][1], toks[k][2]
+                k += 1
 
 
 def _owner_resolver(project: Project):

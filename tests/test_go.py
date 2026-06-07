@@ -177,3 +177,60 @@ def test_engine_name_falls_back_to_builtin_without_toolchain(go_project, monkeyp
     import anma.lang_go as lg
     monkeypatch.setattr(lg.shutil, "which", lambda _name: None)
     assert get_adapter("go").engine_name(go_project) == "builtin"
+
+
+# ---- scanner skips comments + string/raw literals (hook false-positive guard) ---- #
+_BILL = "example.com/shop/domains/billing"
+
+
+def test_scan_ignores_line_comment():
+    assert list(scan_imports(f'package x\n// import "{_BILL}"\n')) == []
+
+
+def test_scan_ignores_block_comment():
+    assert list(scan_imports(f'package x\n/*\nimport "{_BILL}"\n*/\n')) == []
+
+
+def test_scan_ignores_interpreted_string():
+    # a string whose contents look like an import must not be detected
+    assert list(scan_imports(f'package x\nvar s = "import \\"{_BILL}\\""\n')) == []
+
+
+def test_scan_ignores_raw_string_literal():
+    assert list(scan_imports(f'package x\nvar s = `\nimport "{_BILL}"\n`\n')) == []
+
+
+def test_scan_detects_real_single_import():
+    assert list(scan_imports(f'package x\nimport "{_BILL}"\n')) == [(_BILL, 2)]
+
+
+def test_scan_detects_collapsed_one_line_block():
+    src = f'package x\nimport ( "fmt"; "{_BILL}" )\n'
+    assert [p for p, _ in scan_imports(src)] == ["fmt", _BILL]
+
+
+def test_scan_detects_trailing_comment_after_real_import():
+    got = list(scan_imports(f'package x\nimport "{_BILL}" // needed\n'))
+    assert got == [(_BILL, 2)]
+
+
+# ---- the hook must NOT block an edit whose "import" is only in a comment/string -- #
+def test_hook_allows_commented_out_violation(go_project):
+    acc = go_project.root / "domains/accounts/service.go"
+    body = acc.read_text() + f'\n// import "{_BILL}"\n'
+    assert run_hook(_payload("Write", acc, content=body)) == ALLOW
+
+
+def test_hook_allows_import_text_inside_raw_string(go_project):
+    acc = go_project.root / "domains/accounts/service.go"
+    body = acc.read_text() + f'\nvar doc = `import "{_BILL}"`\n'
+    assert run_hook(_payload("Write", acc, content=body)) == ALLOW
+
+
+def test_hook_still_blocks_real_violation_alongside_decoy(go_project):
+    # a decoy in a comment must not mask a real import on another line
+    acc = go_project.root / "domains/accounts/service.go"
+    body = (acc.read_text()
+            + f'\n// import "{_BILL}"  (decoy)\n'
+            + f'\nimport "{_BILL}"\n')
+    assert run_hook(_payload("Write", acc, content=body)) == BLOCK
