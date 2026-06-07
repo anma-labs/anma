@@ -157,6 +157,33 @@ def test_ts_scenario_discriminates():
     assert ctrl[0].module == "accounts" and ctrl[0].imported == "billing"
 
 
+def test_v2_scenarios_discriminate():
+    """The harder v2 scenarios (neutral ticket, seeded real invoices) must still
+    score correctly: the violating control fixture flags, the clean inject-path
+    anma fixture passes — both languages."""
+    from bench.scorer import load_spec, count_violations
+    from bench.runner import ReplayRunner
+    for name in ("go-payments-v2", "ts-payments-v2"):
+        sc = SCENARIOS / name
+        spec = load_spec(sc / "boundaries.yaml")
+        r = ReplayRunner(sc)
+        ctrl = count_violations(r.run(sc / "control", "t", "control").workdir, spec)
+        anma = count_violations(r.run(sc / "anma", "t", "anma").workdir, spec)
+        assert len(ctrl) >= 1 and len(anma) == 0, name
+        assert ctrl[0].module == "accounts" and ctrl[0].imported == "billing", name
+
+
+def test_arm_filter_runs_only_control(tmp_path):
+    """`--arm control` (the pilot mode) runs only the control arm."""
+    out = tmp_path / "r"
+    rc = main(["--runner", "replay", "--scenario", "go-payments-v2",
+               "--arm", "control", "--out", str(out)])
+    assert rc == 0
+    data = json.loads((out / "results.json").read_text())
+    arms = {r["arm"] for r in data["trials"]}
+    assert arms == {"control"}
+
+
 def test_scorer_stays_independent_of_anma():
     """The scorer must NOT import anma — it grades against boundaries.yaml with its
     own parsers, so the tool under measurement cannot grade itself. Checked in a

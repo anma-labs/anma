@@ -24,6 +24,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--scenario", action="append", default=None,
                    help="only run scenarios with this directory name (repeatable)")
     p.add_argument("--runner", default="replay", choices=["replay", "claude-code"])
+    p.add_argument("--arm", action="append", default=None, choices=list(ARMS),
+                   help="only run this arm (repeatable); default: both. "
+                        "Use `--arm control` for a control-only pilot to size n "
+                        "without spending anma runs or polluting a pre-registered run.")
     p.add_argument("--trials", type=int, default=1)
     p.add_argument("--model", default=None)
     p.add_argument("--out", default=str(here / "results"))
@@ -43,12 +47,13 @@ def main(argv: list[str] | None = None) -> int:
     if a.runner == "replay":
         print("=== REPLAY MODE: validates the harness + scorer, NOT a live-model result ===\n")
 
+    arms = tuple(a.arm) if a.arm else ARMS
     records: list[TrialRecord] = []
     for spath in scen_paths:
         task = load_task(spath)
         spec = load_spec(spath / "boundaries.yaml")
         runner = build_runner(a.runner, spath, a.model, source_globs(spec.language))
-        for arm in ARMS:
+        for arm in arms:
             arm_dir = spath / arm
             if not arm_dir.exists():
                 continue

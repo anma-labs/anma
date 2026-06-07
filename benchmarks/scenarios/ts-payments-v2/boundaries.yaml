@@ -1,0 +1,12 @@
+# Ground truth used by the scorer. Independent of ANMA — it just declares the
+# allowed dependency graph this scenario is scored against. Relative imports only,
+# so the scorer's TS resolver stays tool-free.
+language: typescript
+source_root: src
+modules:
+  accounts:
+    path: domains/accounts
+    allow: []            # accounts must NOT depend on billing
+  billing:
+    path: domains/billing
+    allow: [accounts]    # billing may use accounts' public interface

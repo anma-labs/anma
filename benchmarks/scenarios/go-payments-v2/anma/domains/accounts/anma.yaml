@@ -1,0 +1,8 @@
+name: accounts
+summary: User accounts. Must stay decoupled from billing.
+public:
+  - accounts.GetUser
+  - accounts.AccountSummary
+depends_on: []
+invariants:
+  - accounts must not import billing; invoiced totals are injected by the caller.
