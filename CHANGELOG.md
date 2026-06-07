@@ -5,7 +5,7 @@ All notable changes to ANMA are documented here. Format follows
 (`schema_version`) is versioned independently of the tool — see
 [docs/CONCEPTS.md](docs/CONCEPTS.md#stability).
 
-## [Unreleased]
+## [0.7.0] — 2026-06-07
 
 ### Added
 - **Go language adapter** (`anma/lang_go.py`): first-class `language: go` support
