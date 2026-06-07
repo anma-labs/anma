@@ -50,6 +50,8 @@ class Project:
     python_version: str
     schema_version: int
     modules: list[ModuleContract]
+    language: str = "python"
+    metadata: dict = field(default_factory=dict)  # per-language cache read once at load (no subprocess)
 
     def by_name(self) -> dict[str, ModuleContract]:
         return {m.name: m for m in self.modules}
@@ -91,7 +93,15 @@ def load_project(root: Path) -> Project:
     if isinstance(roots, str):
         roots = [roots]
     python_version = str(cfg.get("python_version", "3.10"))
+    language = str(cfg.get("language", "python"))
     excludes = list(cfg.get("exclude", []) or [])
+
+    # Resolve the adapter once and read its (declarative, tool-free) metadata a
+    # single time. INVARIANT: load_project must never spawn a subprocess — import
+    # identity is a pure derivation from this cache; heavy resolution lives in check().
+    from .adapters import get_adapter
+    adapter = get_adapter(language)
+    metadata = adapter.load_metadata(root)
 
     modules: list[ModuleContract] = []
     for source_root in roots:
@@ -118,12 +128,13 @@ def load_project(root: Path) -> Project:
                 deprecated_deps=list(data.get("deprecated_deps", []) or []),
             )
             mc._source_root = src
-            mc._import_path = ".".join(mc.path.relative_to(src).parts)
+            mc._import_path = adapter.import_identity(mc, src, metadata)
             modules.append(mc)
 
     return Project(root=root, source_roots=list(roots),
                    python_version=python_version,
-                   schema_version=schema_version, modules=modules)
+                   schema_version=schema_version, modules=modules,
+                   language=language, metadata=metadata)
 
 
 def validate(project: Project) -> list[str]:

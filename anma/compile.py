@@ -11,6 +11,7 @@ import stat
 from pathlib import Path
 
 from . import templates as T
+from .adapters import get_adapter
 from .contracts import ModuleContract, Project
 
 # Artifacts that are pure functions of the contracts and must never be hand-edited.
@@ -110,10 +111,11 @@ def _merge_root_claude(project: Project, existing: str | None) -> str:
 def regenerated_plan(project: Project) -> dict[Path, str]:
     root = project.root
     plan: dict[Path, str] = {
-        root / "tach.toml": render_tach_toml(project),
         root / ".claude" / "rules" / "boundaries.md": T.BOUNDARIES_RULE,
         root / ".claude" / "hooks" / "anma_pretooluse.py": T.PRETOOLUSE_HOOK,
     }
+    # engine config is language-specific (python -> tach.toml; go/ts plug in here)
+    plan.update(get_adapter(project.language).engine_artifacts(project))
     for m in project.modules:
         plan[m.path / "CLAUDE.md"] = render_module_claude(m)
     co = render_codeowners(project)
@@ -156,7 +158,7 @@ def _seed_once(project: Project) -> dict[Path, str]:
     return {
         # CI is a starting point users customize (e.g. install path), so it is
         # seeded once and not drift-checked — like settings.json / pre-commit.
-        project.root / ".github" / "workflows" / "anma.yml": render_ci(project),
+        project.root / ".github" / "workflows" / "anma.yml": get_adapter(project.language).ci_workflow(project),
         project.root / ".claude" / "settings.json": T.SETTINGS_JSON.format(),
         project.root / ".pre-commit-config.yaml": T.PRECOMMIT,
         project.root / "DECISIONS.md": T.DECISIONS_SEED.format(date=today),

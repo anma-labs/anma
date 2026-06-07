@@ -94,3 +94,23 @@ The contract schema follows SemVer independently of the tool version. This build
 supports `schema_version: 1`. Contracts written today keep working; a breaking
 schema change bumps the major and ships a migration path. The tool will not
 silently reinterpret your contracts.
+
+
+## Languages
+
+The boundary engine is dispatched per language behind a `LanguageAdapter`. The
+contract *graph* — `name`, `depends_on`, `invariants`, `owners` — is the same in
+any language and is what the generated guidance is built from. What's
+language-native (and adapter-derived) is the import identity, the `public:`
+surface, the generated engine config, and CI.
+
+Set it per project in the root `anma.yaml`:
+
+```yaml
+language: python   # default; the only adapter shipped today
+```
+
+Python is implemented now (tach backend, with a zero-dependency `ast` fallback).
+Go and TypeScript adapters plug into the registry in `anma/adapters.py`; until an
+adapter ships and is benchmarked, only `python` is supported and any other value
+is rejected with a clear error.
