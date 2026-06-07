@@ -88,27 +88,55 @@ detect and block real cross-module violations:
 
 That much is established: the machinery exists and fires in both languages.
 
-### What is NOT established: whether ANMA changes model behavior in Go/TS
+### Measuring behavior in Go/TS: a first null, then a pre-registered result
 
-This is unknown. Live run, Claude Haiku 4.5 (`claude-haiku-4-5-20251001`), n=10 per
-arm, 2026-06-07, scored by the independent per-language scorer:
+**First attempt (v1) was underpowered.** Live Haiku 4.5, n=10 per arm, identical to
+the Python task:
 
-| Scenario | control | anma | mean turns (ctrl -> anma) |
-|---|---:|---:|---|
-| go-payments | 0.10 (1/10) | 0.00 (0/10) | 8.9 -> 11.9 |
-| ts-payments | 0.10 (1/10) | 0.00 (0/10) | 7.8 -> 10.5 |
+| Scenario (v1) | control | anma |
+|---|---:|---:|
+| go-payments | 0.10 (1/10) | 0.00 (0/10) |
+| ts-payments | 0.10 (1/10) | 0.00 (0/10) |
 
-**Both control arms violated only 1/10 — too rarely to measure an effect.** With
-so few violations to prevent, there is no statistical power: Fisher's exact is
-`p = 1.0` per language (1/10 vs 0/10), `p ≈ 0.49` pooled. The direction matches
-Python (anma 0, control > 0) but the result is **null / underpowered**, not a
-demonstrated benefit. Hook blocks were 0 (the model never attempted a forbidden
-edit in either arm, so the hook was never invoked in these runs).
+Both control arms violated only 1/10 — too rarely to measure anything (Fisher
+`p = 1.0` per language). Diagnosis: the v1 task spoon-fed "keep the modules
+decoupled" and let a stub (`TotalInvoiced` returning `0`) satisfy it, so there was
+little temptation to cross the boundary — and Go/TS resist casual cross-module
+imports more than Python's loose import culture does.
 
-**The Python 68% → 0 result does NOT transfer to Go/TS, and no efficacy is claimed
-for Go or TS.** To actually measure an effect you need a scenario that tempts this
-model into the boundary more often (a higher control violation rate) and/or a
-larger n. Method + reproduce command: [benchmarks/README.md](../benchmarks/README.md).
+**Pre-registered redesign (v2).** Before running, we committed
+[`PREREGISTRATION-go-ts-v2.md`](../benchmarks/PREREGISTRATION-go-ts-v2.md): a
+neutral feature ticket (no decoupling hint), `billing` seeded with real invoices so
+the tempting cross-module import is the path of least resistance (stub escape
+closed), `n` sized by a control-only pilot, and a fixed **efficacy floor** — a claim
+requires *both* `p < 0.05` *and* a control rate ≥ 0.40. Live Haiku 4.5,
+`claude-haiku-4-5-20251001`, 2026-06-07, independent per-language scorer:
+
+| Scenario (v2) | control | anma | Fisher (one-sided) | meets floor? |
+|---|---:|---:|---|---|
+| ts-payments-v2 | 0.90 (18/20), 95% CI 70–97% | 0.00 (0/20) | p < 0.00001 | **YES — efficacy** |
+| go-payments-v2 | 0.33 (10/30), 95% CI 19–51% | 0.00 (0/30) | p = 0.0004 | NO — below 0.40 floor |
+
+- **TypeScript: a measured efficacy result.** Where the bare model violates the
+  boundary ~90% of the time, ANMA eliminates it (0/20). This is measured for
+  TypeScript directly, not extrapolated from Python.
+- **Go: significant but reported as suggestive, not efficacy.** The effect is
+  directional and `p = 0.0004`, but the control rate (0.33) fell below the
+  pre-registered 0.40 floor — so per the protocol we do **not** claim efficacy for
+  Go, pending a higher-base-rate scenario. (Holding to the floor despite a tiny
+  p-value is deliberate: the floor was fixed before the data.)
+- **The control gap on the *same* task — TS 90% vs Go 33% — is itself the finding:**
+  import explicitness strongly affects how often this model crosses a boundary.
+  ANMA's value concentrates where the language permits casual cross-module imports
+  (TypeScript here, Python ~68% above) and is smaller where the language already
+  imposes friction (Go's explicit `import` block).
+- **ANMA arm: 0 violations across all 50 runs, 0 hook blocks** — the *guidance*
+  layer did the steering — at a turn-count cost (~+40%: Go 9.2 → 13.7, TS 8.1 →
+  12.5).
+
+The Python 68% → 0 result is not transferred to Go/TS; each language is measured on
+its own. Method + reproduce: [benchmarks/README.md](../benchmarks/README.md) and the
+pre-registration above.
 
 ## Two layers, both verified
 

@@ -8,5 +8,4 @@ the control arm (no ANMA hook is installed there).
 
 | Scenario | Arm | Trials | Scored | Mean violations | Total | Mean turns | Hook blocks | Issues |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| payments-boundary | control | 20 | 19 | 0.68 | 13 | 10.3 | — | no_change |
-| payments-boundary | anma | 20 | 20 | 0.00 | 0 | 11.5 | 0 |  |
+| ts-payments-v2 | control | 10 | 10 | 0.90 | 9 | 8.0 | — |  |
