@@ -97,9 +97,10 @@ add turns without changing outcomes — and the benchmarks say so plainly.
 
 ## Lightweight by design
 
-~800 lines, no runtime, no DSL, **zero required dependencies** (the builtin engine
-needs nothing; `tach` is an optional, faster, interface-aware backend). A security
-team can read the whole tool in an afternoon.
+~800 lines, no runtime, no DSL, **one small dependency** (PyYAML) — the builtin
+engine needs nothing more, and the faster external backends (`tach` for Python,
+`go-arch-lint` for Go, `dependency-cruiser` for TypeScript) are all optional. A
+security team can read the whole tool in an afternoon.
 
 ## Enterprise
 
