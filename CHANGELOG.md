@@ -55,6 +55,21 @@ All notable changes to ANMA are documented here. Format follows
   because Haiku violated these scenarios only ~10% of the time in control. Published
   as a null/underpowered result; the strong Python numbers are not extrapolated to
   Go/TS. See `benchmarks/README.md`.
+### Changed
+- **Docs updated for Go and TypeScript** (honestly). CONCEPTS documents the
+  `language:` field, the per-language engine backends (`tach` / `go-arch-lint` /
+  `dependency-cruiser`, each with a builtin fallback), and that interface-level
+  (`public:`) enforcement is Python-only while Go/TS enforce module→module. The TS
+  adapter is documented as resolving **both relative imports and `tsconfig`
+  `baseUrl`/`paths` aliases** (the relative-only property is the benchmark scenario,
+  not the adapter). README/QUICKSTART note `anma init --language go|typescript`.
+- **Benchmark framing keeps two claims separate:** the Go/TS adapters are
+  *validated* (`anma check` + the hook detect and block real cross-module
+  violations — TS via dependency-cruiser on a live violation; Go via the builtin
+  scanner), but whether ANMA *changes model behavior* in Go/TS is **not
+  established** (live Haiku n=10/arm: both control arms violated only 1/10, Fisher
+  `p = 1.0` — null/underpowered). The Python 68% → 0 result does not transfer and no
+  efficacy is claimed for Go/TS.
 
 ## [0.6.0] — 2026-06-06
 

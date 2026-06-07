@@ -8,6 +8,11 @@ plus a CI/governance guarantee — not making a frontier model smarter.
 
 Every number here is reproducible with the commands at the bottom.
 
+> **Scope:** all the headline/two-tier numbers below are **Python** (`tach`/`ast`
+> engine). Go and TypeScript ship their own scenarios with their own live run,
+> reported separately under [Other languages](#other-languages--go-and-typescript)
+> — those numbers are an honest null and are **not** the Python result.
+
 ## Method
 
 Each scenario gives the agent the **same task** in two arms:
@@ -62,6 +67,48 @@ At the frontier, ANMA shows no benefit on this axis.
 `cross-session-persistence` did not induce a violation in either arm at this n, so
 it neither supports nor refutes the persistence claim — stated plainly rather than
 spun.
+
+## Other languages — Go and TypeScript
+
+Two separate questions, two separate answers. Keep them apart.
+
+### What is validated: the adapters are functional
+
+The Go and TypeScript adapters **work** — `anma check` and the PreToolUse hook
+detect and block real cross-module violations:
+
+- **TypeScript** — enforcement via **`dependency-cruiser`**, verified on a live
+  violation (a used cross-module import is reported as `✗ 1 boundary violation`);
+  the builtin detector is the zero-dependency fallback and the in-session hook
+  blocks a forbidden `.ts` edit with `exit 2`.
+- **Go** — enforcement via the **builtin import scanner**, which detects the same
+  violation and blocks a forbidden `.go` edit with `exit 2`. The external
+  `go-arch-lint` backend is implemented but **not exercised here** (no Go toolchain
+  on the bench host).
+
+That much is established: the machinery exists and fires in both languages.
+
+### What is NOT established: whether ANMA changes model behavior in Go/TS
+
+This is unknown. Live run, Claude Haiku 4.5 (`claude-haiku-4-5-20251001`), n=10 per
+arm, 2026-06-07, scored by the independent per-language scorer:
+
+| Scenario | control | anma | mean turns (ctrl -> anma) |
+|---|---:|---:|---|
+| go-payments | 0.10 (1/10) | 0.00 (0/10) | 8.9 -> 11.9 |
+| ts-payments | 0.10 (1/10) | 0.00 (0/10) | 7.8 -> 10.5 |
+
+**Both control arms violated only 1/10 — too rarely to measure an effect.** With
+so few violations to prevent, there is no statistical power: Fisher's exact is
+`p = 1.0` per language (1/10 vs 0/10), `p ≈ 0.49` pooled. The direction matches
+Python (anma 0, control > 0) but the result is **null / underpowered**, not a
+demonstrated benefit. Hook blocks were 0 (the model never attempted a forbidden
+edit in either arm, so the hook was never invoked in these runs).
+
+**The Python 68% → 0 result does NOT transfer to Go/TS, and no efficacy is claimed
+for Go or TS.** To actually measure an effect you need a scenario that tempts this
+model into the boundary more often (a higher control violation rate) and/or a
+larger n. Method + reproduce command: [benchmarks/README.md](../benchmarks/README.md).
 
 ## Two layers, both verified
 
@@ -124,7 +171,9 @@ run) into the repo so the table is auditable, not asserted.
 
 - The headline is n=20 on one scenario with one cheaper model; broaden across more
   boundary shapes and other agents to generalize.
-- Single model family (Claude) and three hand-built scenarios.
+- Single model family (Claude). The headline is Python; the Go/TS scenarios are
+  wired and runnable but are a weak discriminator for Haiku 4.5 (low control
+  violation rate), so their numbers are a null result, not a measured Go/TS benefit.
 - The hook was never exercised *in the suite* (guidance pre-empted every bad
   edit); its blocking behavior is verified by the direct test above, not by the
   benchmark runs. A scenario that defeats guidance to force a live hook block is

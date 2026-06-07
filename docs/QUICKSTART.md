@@ -20,6 +20,14 @@ This drops a root `anma.yaml` and a worked example under `src/domains/`: an
 `accounts` module and a `billing` module, where `billing` may depend on
 `accounts` but **not** the reverse.
 
+This walkthrough is Python. For Go or TypeScript, run `anma init --language go`
+or `anma init --language typescript` — the same `accounts`/`billing` boundary in
+that language. The flow below is identical; only the source files and the engine
+config differ (`.go-arch-lint.yml` / `.dependency-cruiser.cjs` instead of
+`tach.toml`). Go and TypeScript enforce module→module dependencies (interface-level
+`public:` enforcement is Python-only today). See
+[CONCEPTS § Languages](CONCEPTS.md#languages).
+
 ## 3. Generate the guardrails
 
 ```bash
@@ -84,9 +92,10 @@ A large repo won't be clean on day one. Two levers:
 The benchmark ([../docs/BENCHMARKS.md](../docs/BENCHMARKS.md)) shows the effect is
 model-dependent: a frontier model tends to respect a documented architecture on
 its own, while a cheaper/faster model violated a boundary ~68% of the time in a
-plain repo and 0/20 with ANMA. So you'll see the biggest difference when driving
-cheaper or weaker agents — and the enforcement hook plus CI gate hold regardless
-of which model or human wrote the change.
+plain repo and 0/20 with ANMA (Python). So you'll see the biggest difference when
+driving cheaper or weaker agents — and the enforcement hook plus CI gate hold
+regardless of which model or human wrote the change. (The Go/TS scenarios are a
+weaker discriminator for that model so far — an honest null; see BENCHMARKS.)
 
 ## Next
 
