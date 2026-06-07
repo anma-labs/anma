@@ -7,6 +7,22 @@ All notable changes to ANMA are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-06-06
+
+### Added
+- **Language-adapter seam** (`anma/adapters.py`): the boundary engine is now
+  dispatched per language behind a `LanguageAdapter` protocol + registry. Python
+  ships today (delegating to `anma.engine`); Go and TypeScript adapters plug in
+  without touching the neutral layers. Contracts gain an optional `language:`
+  field (defaults to `python`; existing contracts are unaffected).
+- The contract *graph* (`name`, `depends_on`, `invariants`, `owners`) is
+  language-neutral; import identity, the `public:` surface, engine config, and CI
+  are language-native and adapter-derived (see DECISIONS.md).
+
+### Changed
+- `compile`, `cli check`, and the PreToolUse hook route through
+  `adapters.get_adapter(project.language)`. Python behavior is unchanged.
+
 ## [0.5.6] — 2026-06-06
 
 ### Fixed

@@ -50,6 +50,7 @@ class Project:
     python_version: str
     schema_version: int
     modules: list[ModuleContract]
+    language: str = "python"
 
     def by_name(self) -> dict[str, ModuleContract]:
         return {m.name: m for m in self.modules}
@@ -91,6 +92,7 @@ def load_project(root: Path) -> Project:
     if isinstance(roots, str):
         roots = [roots]
     python_version = str(cfg.get("python_version", "3.10"))
+    language = str(cfg.get("language", "python"))
     excludes = list(cfg.get("exclude", []) or [])
 
     modules: list[ModuleContract] = []
@@ -118,12 +120,14 @@ def load_project(root: Path) -> Project:
                 deprecated_deps=list(data.get("deprecated_deps", []) or []),
             )
             mc._source_root = src
-            mc._import_path = ".".join(mc.path.relative_to(src).parts)
+            from .adapters import get_adapter
+            mc._import_path = get_adapter(language).import_identity(mc, src)
             modules.append(mc)
 
     return Project(root=root, source_roots=list(roots),
                    python_version=python_version,
-                   schema_version=schema_version, modules=modules)
+                   schema_version=schema_version, modules=modules,
+                   language=language)
 
 
 def validate(project: Project) -> list[str]:

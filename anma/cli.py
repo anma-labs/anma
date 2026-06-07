@@ -9,7 +9,7 @@ from pathlib import Path
 from . import __version__
 from .compile import check_drift, sync as compile_sync
 from .contracts import load_project, validate
-from .engine import check as engine_check, detect_engine
+from .adapters import get_adapter
 from .scaffold import init_project
 
 
@@ -63,8 +63,9 @@ def cmd_check(args) -> int:
                 print(f"contract: {i}", file=sys.stderr)
         return 1
 
-    engine = detect_engine()
-    violations = engine_check(project, engine)
+    adapter = get_adapter(project.language)
+    engine = adapter.engine_name(project)
+    violations = adapter.check(project)
     hard = [v for v in violations if not v.deprecated]
 
     if args.json:

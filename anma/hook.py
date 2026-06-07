@@ -20,7 +20,8 @@ import sys
 from pathlib import Path
 
 from .contracts import load_project
-from .engine import disallowed_targets, module_for_file
+from .adapters import any_adapter_handles, get_adapter
+from .engine import module_for_file
 
 ALLOW, BLOCK = 0, 2
 
@@ -69,12 +70,20 @@ def run_hook(stdin_text: str) -> int:
         return ALLOW
     tool_input = data.get("tool_input", {}) or {}
     file_path = tool_input.get("file_path")
-    if not file_path or not str(file_path).endswith(".py"):
+    if not file_path:
+        return ALLOW
+    file = Path(file_path)
+    if not any_adapter_handles(file):   # cheap pre-filter (no language owns this type)
         return ALLOW
 
-    file = Path(file_path)
     project = _find_project(file)
     if project is None:
+        return ALLOW
+    try:
+        adapter = get_adapter(project.language)
+    except ValueError:
+        return ALLOW
+    if not adapter.handles_file(file):
         return ALLOW
     module = module_for_file(project, file)
     if module is None:
@@ -85,8 +94,8 @@ def run_hook(stdin_text: str) -> int:
     if proposed is None:
         return ALLOW
 
-    current_bad = disallowed_targets(project, module, file, current)
-    proposed_bad = disallowed_targets(project, module, file, proposed)
+    current_bad = adapter.disallowed_targets(project, module, file, current)
+    proposed_bad = adapter.disallowed_targets(project, module, file, proposed)
     new_bad = proposed_bad - current_bad
     if new_bad:
         targets = ", ".join(sorted(new_bad))

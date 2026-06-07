@@ -258,3 +258,68 @@ def test_sync_does_not_clobber_customized_ci(project):
     ci.write_text("# my custom CI\n")
     sync(load_project(project.root))
     assert ci.read_text() == "# my custom CI\n"
+
+
+# ---- v0.6.0: the language-adapter seam (Go/TypeScript plug in here) ----
+from anma.adapters import (LanguageAdapter, PythonAdapter, get_adapter,
+                           register_adapter, any_adapter_handles, ADAPTERS)
+from anma.engine import Violation
+
+
+def test_default_language_is_python(project):
+    assert project.language == "python"
+    assert isinstance(get_adapter("python"), PythonAdapter)
+
+
+def test_unknown_language_is_rejected():
+    import pytest
+    with pytest.raises(ValueError):
+        get_adapter("cobol")
+
+
+def test_python_adapter_owns_only_py():
+    a = get_adapter("python")
+    assert a.handles_file(Path("x/service.py"))
+    assert not a.handles_file(Path("x/service.go"))
+    assert not a.handles_file(Path("x/service.ts"))
+
+
+def test_python_adapter_conforms_to_protocol():
+    assert isinstance(get_adapter("python"), LanguageAdapter)
+
+
+def test_engine_dispatch_is_extensible(project, monkeypatch):
+    """A non-Python language plugs in via the registry and is reached end-to-end,
+    with no change to the neutral layers — the whole point of the seam."""
+    calls = {"check": 0, "dt": 0}
+
+    class FakeAdapter:
+        language = "fake"
+        file_globs = ("*.fake",)
+        def handles_file(self, file): return file.name.endswith(".fake")
+        def import_identity(self, module, source_root): return module.name
+        def check(self, project, backend=None):
+            calls["check"] += 1; return [Violation("m", "f.fake", 1, "fake violation")]
+        def disallowed_targets(self, project, module, file, source):
+            calls["dt"] += 1; return {"billing"} if "billing" in source else set()
+        def engine_name(self, project): return "fake-engine"
+        def engine_artifacts(self, project): return {project.root / "fake.config": "ok"}
+        def ci_workflow(self, project): return "name: fake-ci\n"
+
+    monkeypatch.setitem(ADAPTERS, "fake", FakeAdapter())
+    assert any_adapter_handles(Path("a/b.fake"))
+    a = get_adapter("fake")
+    assert a.engine_name(project) == "fake-engine"
+    assert a.check(project) and calls["check"] == 1
+    # the hook routes a fake-language edit through the fake adapter's resolver
+    from anma.hook import run_hook, BLOCK
+    import json as _j
+    f = project.root / "src/domains/accounts/widget.fake"
+    f.write_text("")
+    object.__setattr__(project, "language", "fake")  # not needed; hook reloads project
+    # simulate a fake project: write language into the root config so the hook picks it up
+    cfg = (project.root / "anma.yaml").read_text()
+    (project.root / "anma.yaml").write_text(cfg + "\nlanguage: fake\n")
+    payload = _j.dumps({"tool_name": "Write",
+                        "tool_input": {"file_path": str(f), "content": "import billing"}})
+    assert run_hook(payload) == BLOCK and calls["dt"] >= 1
