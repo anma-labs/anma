@@ -125,18 +125,28 @@ Three adapters ship today:
   the `go.mod` module path plus the package directory
   (`example.com/app/domains/billing`); `go.mod` is read at load (no subprocess).
 - **TypeScript** — wraps `dependency-cruiser` (real tsconfig-path/barrel/`import
-  type` resolution) with a builtin detector. Import identity is the
-  tsconfig-resolved specifier; `tsconfig.json` is read at load (relative `extends`
-  only in this release).
+  type` resolution) with a builtin detector. Import identity resolves **both
+  relative imports and `tsconfig` `baseUrl`/`paths` aliases** (e.g. `@app/billing`);
+  `tsconfig.json` is read at load. (Only the *`extends`* resolution is limited to
+  relative paths in this release; package-name `extends` is deferred. The bundled
+  benchmark scenario uses relative imports, but that is a property of the scenario,
+  not a limit of the adapter.)
 
 `anma init --language go|typescript` scaffolds a runnable worked example for each.
 Any other `language:` value is rejected with a clear error.
 
 **What's Python-only (be precise):** interface-level (`public:`) *enforcement* is
 Python/tach-only; Go and TypeScript enforce module→module dependencies and use
-`public:` for guidance. **Benchmark evidence is per language and not transferable:**
-the headline Python result is Python-only; Go and TypeScript ship with their own
-`go-payments` / `ts-payments` scenarios whose live run is an honest
-null/underpowered result (see [BENCHMARKS.md](BENCHMARKS.md) and
-[benchmarks/README.md](../benchmarks/README.md)). The polyglot monorepo (multiple
+`public:` for guidance.
+
+**Two claims, kept separate:** the Go and TypeScript adapters are **validated** —
+`anma check` and the PreToolUse hook detect and block real cross-module violations
+(TS via `dependency-cruiser`, verified on a live violation; Go via the builtin
+scanner, with `go-arch-lint` implemented but unexercised here). Whether ANMA
+**changes model behavior** in these languages is **not established**: the live
+`go-payments` / `ts-payments` run (Haiku 4.5, n=10/arm) is null/underpowered —
+both control arms violated only 1/10, too rarely to measure an effect (Fisher
+`p = 1.0` per language). **The Python 68% → 0 result does not transfer to Go/TS and
+no efficacy is claimed for them.** See [BENCHMARKS.md](BENCHMARKS.md) and
+[benchmarks/README.md](../benchmarks/README.md). The polyglot monorepo (multiple
 languages in one tree) is out of scope for this release.

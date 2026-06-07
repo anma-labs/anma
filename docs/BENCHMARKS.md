@@ -70,26 +70,45 @@ spun.
 
 ## Other languages — Go and TypeScript
 
-The Go and TypeScript adapters ship with their own boundary scenarios
-(`go-payments`, `ts-payments`) that mirror the Python `payments-boundary`
-temptation, scored by the **same independent, per-language scorer**. Live run on
-Claude Haiku 4.5 (`claude-haiku-4-5-20251001`), n=10 per arm, 2026-06-07:
+Two separate questions, two separate answers. Keep them apart.
+
+### What is validated: the adapters are functional
+
+The Go and TypeScript adapters **work** — `anma check` and the PreToolUse hook
+detect and block real cross-module violations:
+
+- **TypeScript** — enforcement via **`dependency-cruiser`**, verified on a live
+  violation (a used cross-module import is reported as `✗ 1 boundary violation`);
+  the builtin detector is the zero-dependency fallback and the in-session hook
+  blocks a forbidden `.ts` edit with `exit 2`.
+- **Go** — enforcement via the **builtin import scanner**, which detects the same
+  violation and blocks a forbidden `.go` edit with `exit 2`. The external
+  `go-arch-lint` backend is implemented but **not exercised here** (no Go toolchain
+  on the bench host).
+
+That much is established: the machinery exists and fires in both languages.
+
+### What is NOT established: whether ANMA changes model behavior in Go/TS
+
+This is unknown. Live run, Claude Haiku 4.5 (`claude-haiku-4-5-20251001`), n=10 per
+arm, 2026-06-07, scored by the independent per-language scorer:
 
 | Scenario | control | anma | mean turns (ctrl -> anma) |
 |---|---:|---:|---|
 | go-payments | 0.10 (1/10) | 0.00 (0/10) | 8.9 -> 11.9 |
 | ts-payments | 0.10 (1/10) | 0.00 (0/10) | 7.8 -> 10.5 |
 
-**This is a null/underpowered result, stated plainly.** The direction matches
-Python (anma 0, control > 0) but it is **not significant**: Fisher's exact is
-`p = 1.0` per language and `p ≈ 0.49` pooled. Haiku violated these control arms
-only ~10% of the time — far below the ~68% on the Python scenario — so there was
-little for ANMA to prevent here. The strong Python numbers are **not** transferred
-to Go/TS; a harder scenario and/or larger n is needed to measure a real effect.
-Backends exercised: TypeScript via `dependency-cruiser`; Go via the builtin scanner
-(no Go toolchain on the bench host — `go-arch-lint` is implemented, not exercised).
-Hook blocks were 0 (the agent never attempted a forbidden edit). Full method and
-the reproduce command are in [benchmarks/README.md](../benchmarks/README.md).
+**Both control arms violated only 1/10 — too rarely to measure an effect.** With
+so few violations to prevent, there is no statistical power: Fisher's exact is
+`p = 1.0` per language (1/10 vs 0/10), `p ≈ 0.49` pooled. The direction matches
+Python (anma 0, control > 0) but the result is **null / underpowered**, not a
+demonstrated benefit. Hook blocks were 0 (the model never attempted a forbidden
+edit in either arm, so the hook was never invoked in these runs).
+
+**The Python 68% → 0 result does NOT transfer to Go/TS, and no efficacy is claimed
+for Go or TS.** To actually measure an effect you need a scenario that tempts this
+model into the boundary more often (a higher control violation rate) and/or a
+larger n. Method + reproduce command: [benchmarks/README.md](../benchmarks/README.md).
 
 ## Two layers, both verified
 

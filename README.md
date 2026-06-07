@@ -14,9 +14,11 @@ guarantee — not making a frontier model smarter.
 
 **Languages:** Python, Go, and TypeScript (`language:` in the root `anma.yaml`,
 one per project). Go and TypeScript enforce module→module dependencies; interface
-(`public:`) enforcement is Python-only today. The benchmark above is Python — the
-Go/TS scenarios ship with their own live run, an honest null result, not the
-Python number. Details: [CONCEPTS § Languages](https://github.com/anma-labs/anma/blob/main/docs/CONCEPTS.md#languages).
+(`public:`) enforcement is Python-only today. The Go/TS adapters are validated
+(`anma check` + the hook detect and block real cross-module violations), but
+**whether ANMA changes model behavior in Go/TS is not established** — the benchmark
+above is Python, and the Go/TS live run is a null/underpowered result that does not
+transfer the Python numbers. Details: [CONCEPTS § Languages](https://github.com/anma-labs/anma/blob/main/docs/CONCEPTS.md#languages).
 
 ## What it does
 
