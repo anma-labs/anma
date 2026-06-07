@@ -125,3 +125,7 @@ def any_adapter_handles(file: Path) -> bool:
 from .lang_go import GoAdapter  # noqa: E402
 
 register_adapter(GoAdapter())
+
+from .lang_ts import TsAdapter  # noqa: E402
+
+register_adapter(TsAdapter())
