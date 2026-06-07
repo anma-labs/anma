@@ -100,7 +100,7 @@ def main(argv: list[str] | None = None) -> int:
     pi = sub.add_parser("init", help="scaffold ANMA into a project")
     pi.add_argument("path", nargs="?", default=".")
     pi.add_argument("--language", default="python",
-                    help="worked-example language (python, go, ...); default: python")
+                    help="worked-example language (python, go, typescript, ...); default: python")
     pi.set_defaults(func=cmd_init)
 
     ps = sub.add_parser("sync", help="regenerate CLAUDE.md / hooks / tach config from contracts")

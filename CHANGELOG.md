@@ -23,6 +23,25 @@ All notable changes to ANMA are documented here. Format follows
   per-edit hook path stays pure (guarded by a Go `test_load_project_never_spawns_subprocess`).
 - `pyproject` optional-dependency group `[go]` (empty: `go-arch-lint` is a Go
   binary, not a PyPI package — the builtin fallback needs nothing).
+- **TypeScript language adapter** (`anma/lang_ts.py`): first-class
+  `language: typescript` support for `init` / `sync` / `check`, plugged into the
+  v0.6.0 `LanguageAdapter` seam with **no changes to the neutral layers**. Import
+  identity is the tsconfig-resolved specifier (`baseUrl`/`paths`, e.g.
+  `@app/billing`); the import→module resolver uses resolved-specifier equality and
+  lives in the adapter.
+- TS enforcement **wraps dependency-cruiser** for real resolution (tsconfig paths,
+  barrels, `import type`) and falls back to a zero-dependency builtin import
+  detector (real line numbers) when node/dependency-cruiser is absent — or when
+  dependency-cruiser can't parse (no `typescript` peer), guarded against a
+  false-clean. `import type` is treated as a real boundary edge. Enforcement is
+  **module→module only**.
+- `anma init --language typescript` scaffolds a runnable TS worked example; `sync`
+  generates `.dependency-cruiser.cjs` (in place of `tach.toml`) and a Node-flavored
+  CI workflow. `tsconfig.json` is read with a plain file read at load (relative
+  `extends` only; no subprocess), keeping the per-edit hook path pure (guarded by a
+  TS `test_load_project_never_spawns_subprocess`).
+- `pyproject` optional-dependency group `[ts]` (empty: dependency-cruiser is an npm
+  package, not a PyPI one — the builtin fallback needs nothing).
 
 ## [0.6.0] — 2026-06-06
 

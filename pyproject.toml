@@ -22,6 +22,11 @@ tach = ["tach>=0.30"]
 # This extra exists as a documented install target; the builtin import scanner
 # needs nothing. `pip install anma[go]` therefore adds no Python dependency.
 go = []
+# TypeScript's external backend (dependency-cruiser) is an npm package, not a
+# PyPI one: `npm install --no-save dependency-cruiser` (or run via `npx`). This
+# extra is a documented install target; the builtin import detector needs nothing,
+# so `pip install anma[ts]` adds no Python dependency.
+ts = []
 dev = ["pytest>=8.0", "pip-audit>=2.7"]
 
 [project.urls]

@@ -106,10 +106,63 @@ func CreateInvoice(userID string, amount int) map[string]any {
 """,
 }
 
+TS_ROOT_YAML = """# ANMA project config (TypeScript). Modules are discovered from per-directory anma.yaml.
+schema_version: 1
+language: typescript
+source_roots:
+  - src
+"""
+
+TS_EXAMPLE = {
+    "tsconfig.json": """{
+  "compilerOptions": {
+    "baseUrl": "src",
+    "strict": true
+  }
+}
+""",
+    "src/domains/accounts/anma.yaml": """name: accounts
+summary: User accounts and authentication.
+public:
+  - accounts/service.getUser
+  - accounts/service.authenticate
+depends_on: []
+invariants:
+  - Password hashes never leave this module.
+""",
+    "src/domains/accounts/service.ts": """// accounts public surface.
+export function getUser(userId: string): { id: string; name: string } {
+  return { id: userId, name: "Ada" };
+}
+
+export function authenticate(token: string): boolean {
+  return token !== "";
+}
+""",
+    "src/domains/billing/anma.yaml": """name: billing
+summary: Invoices and payment processing.
+public:
+  - billing/service.createInvoice
+depends_on:
+  - accounts            # billing may use accounts' public interface
+invariants:
+  - Never store raw card numbers.
+""",
+    "src/domains/billing/service.ts": """// billing public surface. May import accounts (allowed).
+import { getUser } from "../accounts/service";
+
+export function createInvoice(userId: string, amount: number) {
+  const user = getUser(userId);
+  return { user: user.id, amount };
+}
+""",
+}
+
 # language -> (root anma.yaml, {relative path: content}). New languages append here.
 SCAFFOLDS: dict[str, tuple[str, dict[str, str]]] = {
     "python": (ROOT_YAML, EXAMPLE),
     "go": (GO_ROOT_YAML, GO_EXAMPLE),
+    "typescript": (TS_ROOT_YAML, TS_EXAMPLE),
 }
 
 
