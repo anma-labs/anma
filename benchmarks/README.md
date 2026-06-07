@@ -77,8 +77,52 @@ The bundled language scenarios mirror the same accounts/billing boundary:
 `payments-boundary` (Python), `go-payments` (Go), `ts-payments` (TypeScript). Each
 tempts the agent to add a forbidden `accounts → billing` import.
 
+## Multi-language live results (Go, TypeScript)
+
+Real `claude-code` runs on **Claude Haiku 4.5** (`claude-haiku-4-5-20251001`),
+`claude` CLI `2.1.168`, 2026-06-07, **n=10 per arm**. All 40 runs completed with
+status `ok` and were scored by the independent per-language scorer (Go via its own
+import scanner; TypeScript likewise). ANMA's own enforcement backend in the anma
+arm was **dependency-cruiser** for TS and the **builtin** scanner for Go (no Go
+toolchain on the bench host — go-arch-lint is implemented but not exercised here).
+
+| Scenario | Arm | n | Violations | Mean | Mean turns | Hook blocks |
+|---|---|---:|---:|---:|---:|---:|
+| go-payments | control | 10 | 1 | 0.10 | 8.9 | — |
+| go-payments | anma | 10 | 0 | 0.00 | 11.9 | 0 |
+| ts-payments | control | 10 | 1 | 0.10 | 7.8 | — |
+| ts-payments | anma | 10 | 0 | 0.00 | 10.5 | 0 |
+
+**Read this honestly — it is a null/underpowered result, not a Go/TS "win":**
+
+- The direction matches Python (anma 0, control > 0), but the effect is **not
+  statistically significant**: Fisher's exact is `p = 1.0` per language (1/10 vs
+  0/10) and `p ≈ 0.49` pooled (2/20 vs 0/20).
+- Haiku violated the boundary only **~10%** of the time in these control arms, far
+  below the **~68%** it showed on the Python `payments-boundary` scenario. So the
+  temptation these specific Go/TS scenarios create is weak for this model — there
+  was little for ANMA to prevent. This is **not** evidence of parity with the
+  Python result, and the strong Python numbers are **not** transferred to Go/TS.
+- **Hook blocks = 0** in every anma run: the agent, guided by the generated
+  `CLAUDE.md`, did not *attempt* a forbidden import, so the hook had nothing to
+  block. The enforcement layer (hook exit 2 on a forbidden Go/TS edit) is verified
+  separately by unit tests and a direct invocation, not by these runs.
+- ANMA added a few turns (Go 8.9→11.9, TS 7.8→10.5), consistent with prior runs.
+
+To get a discriminating Go/TS number you would need a harder scenario (one where
+Haiku slips more often in control) and/or a larger n. Reproduce:
+
+```bash
+cd benchmarks
+python -m bench.run --runner claude-code --model claude-haiku-4-5-20251001 \
+  --trials 10 --scenario go-payments --scenario ts-payments
+```
+
 ## Honest limits
 
 - Replay numbers validate the instrument, not the model.
 - Live numbers depend on model, version, and prompt; report the distribution
   across trials and publish the transcripts rather than a single figure.
+- The Go/TS scenarios above are weak discriminators for Haiku 4.5 (low control
+  violation rate); treat their numbers as a wired-and-runnable instrument plus a
+  null result, not as a measured ANMA benefit for Go/TS.
