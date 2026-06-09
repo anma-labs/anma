@@ -143,10 +143,14 @@ Python/tach-only; Go and TypeScript enforce module→module dependencies and use
 `anma check` and the PreToolUse hook detect and block real cross-module violations
 (TS via `dependency-cruiser`, verified on a live violation; Go via the builtin
 scanner, with `go-arch-lint` implemented but unexercised here). Whether ANMA
-**changes model behavior** in these languages is **not established**: the live
-`go-payments` / `ts-payments` run (Haiku 4.5, n=10/arm) is null/underpowered —
-both control arms violated only 1/10, too rarely to measure an effect (Fisher
-`p = 1.0` per language). **The Python 68% → 0 result does not transfer to Go/TS and
-no efficacy is claimed for them.** See [BENCHMARKS.md](BENCHMARKS.md) and
+**changes model behavior** was then tested in a **pre-registered** follow-up
+(neutral prompt, harder scenario; floor and `n` fixed before the data). **TypeScript
+shows a measured effect** — control 18/20 (90%) vs ANMA 0/20, Fisher's exact
+`p < 0.00001`. **Go** is directional and significant (10/30 → 0/30, `p = 0.0004`) but
+its control rate (0.33) fell below the pre-registered 0.40 floor, so it is reported
+as **suggestive, not yet efficacy**. The same task drew 90% violations in TS but 33%
+in Go — import explicitness matters, and ANMA helps most where the language permits
+casual cross-module imports. **The Python 68% → 0 result is not extrapolated to
+Go/TS; each language is measured on its own.** See [BENCHMARKS.md](BENCHMARKS.md) and
 [benchmarks/README.md](../benchmarks/README.md). The polyglot monorepo (multiple
 languages in one tree) is out of scope for this release.
