@@ -158,11 +158,64 @@ export function createInvoice(userId: string, amount: number) {
 """,
 }
 
+DART_ROOT_YAML = """# ANMA project config (Dart). Modules are discovered from per-directory anma.yaml.
+schema_version: 1
+language: dart
+source_roots:        # for Dart this is the package's `lib/` directory
+  - lib
+"""
+
+DART_EXAMPLE = {
+    "pubspec.yaml": """name: example_shop
+description: ANMA Dart example.
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+""",
+    "lib/domains/accounts/anma.yaml": """name: accounts
+summary: User accounts and authentication.
+public:
+  - accounts/service.getUser
+  - accounts/service.authenticate
+depends_on: []
+invariants:
+  - Password hashes never leave this module.
+""",
+    "lib/domains/accounts/service.dart": """// accounts public surface.
+class User {
+  final String id;
+  final String name;
+  const User(this.id, this.name);
+}
+
+User getUser(String userId) => User(userId, 'Ada');
+
+bool authenticate(String token) => token.isNotEmpty;
+""",
+    "lib/domains/billing/anma.yaml": """name: billing
+summary: Invoices and payment processing.
+public:
+  - billing/service.createInvoice
+depends_on:
+  - accounts            # billing may use accounts' public interface
+invariants:
+  - Never store raw card numbers.
+""",
+    "lib/domains/billing/service.dart": """// billing public surface. May import accounts (allowed).
+import 'package:example_shop/domains/accounts/service.dart';
+
+Map<String, Object> createInvoice(String userId, int amount) {
+  final user = getUser(userId);
+  return {'user': user.id, 'amount': amount};
+}
+""",
+}
+
 # language -> (root anma.yaml, {relative path: content}). New languages append here.
 SCAFFOLDS: dict[str, tuple[str, dict[str, str]]] = {
     "python": (ROOT_YAML, EXAMPLE),
     "go": (GO_ROOT_YAML, GO_EXAMPLE),
     "typescript": (TS_ROOT_YAML, TS_EXAMPLE),
+    "dart": (DART_ROOT_YAML, DART_EXAMPLE),
 }
 
 

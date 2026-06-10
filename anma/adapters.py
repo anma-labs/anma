@@ -129,3 +129,7 @@ register_adapter(GoAdapter())
 from .lang_ts import TsAdapter  # noqa: E402
 
 register_adapter(TsAdapter())
+
+from .lang_dart import DartAdapter  # noqa: E402
+
+register_adapter(DartAdapter())

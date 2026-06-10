@@ -8,8 +8,9 @@ are SEPARATE implementations from anma's adapters. A parsing bug in anma therefo
 cannot hide itself in the score.
 
 `boundaries.yaml` gains an optional `language:` field (default `python`); Go also
-declares `module_prefix:` (its go.mod module path) so import paths reduce to the
-slash-style `path:` values. Absent `language:`, behavior is identical to before.
+declares `module_prefix:` (its go.mod module path) and Dart `package_name:` (its
+pubspec package name) so import paths reduce to the slash-style `path:` values.
+Absent `language:`, behavior is identical to before.
 """
 from __future__ import annotations
 
@@ -38,12 +39,14 @@ class BoundarySpec:
     modules: dict  # name -> {"path": <native path>, "allow": [names]}
     language: str = "python"
     module_prefix: str = ""  # Go: the go.mod module path, stripped from import paths
+    package_name: str = ""   # Dart: the pubspec package name, for package:<own>/... URIs
 
 
 def load_spec(path: Path) -> BoundarySpec:
     d = yaml.safe_load(path.read_text())
     return BoundarySpec(d.get("source_root", "src"), d["modules"],
-                        d.get("language", "python"), d.get("module_prefix", ""))
+                        d.get("language", "python"), d.get("module_prefix", ""),
+                        d.get("package_name", ""))
 
 
 def source_globs(language: str) -> tuple[str, ...]:
@@ -51,6 +54,7 @@ def source_globs(language: str) -> tuple[str, ...]:
         "python": ("*.py",),
         "go": ("*.go",),
         "typescript": ("*.ts", "*.tsx"),
+        "dart": ("*.dart",),
     }.get(language, ("*.py",))
 
 
@@ -183,8 +187,57 @@ def _ts_imports(text: str, file: Path, src: Path, spec: BoundarySpec):
                 yield resolved, lineno
 
 
+_DART_DIRECTIVE = re.compile(r"""\b(import|export)\b\s*['"]([^'"]+)['"]""")
+
+
+def _dart_imports(text: str, file: Path, src: Path, spec: BoundarySpec):
+    """Independent Dart import/export scanner (SEPARATE from anma's masked scanner).
+
+    Line-based: skips `//` line and `/* */` block comments, ignores `part` /
+    `part of`, and resolves each `import`/`export` URI to a `lib/`-relative slash
+    path (matching the `path:` values). RELATIVE URIs resolve against the importing
+    file's dir; `package:<own>/...` maps to the same lib path; `dart:` and
+    third-party `package:` URIs are external (skipped)."""
+    pkg = (spec.package_name or "").strip()
+    in_block = False
+    for lineno, raw in enumerate(text.splitlines(), start=1):
+        s = raw.strip()
+        if in_block:
+            if "*/" in s:
+                in_block = False
+            continue
+        if s.startswith("//"):
+            continue
+        if s.startswith("/*"):
+            if "*/" not in s:
+                in_block = True
+            continue
+        m = _DART_DIRECTIVE.match(s)        # directive at line start only
+        if not m:
+            continue
+        resolved = _dart_resolve(m.group(2), file, src, pkg)
+        if resolved is not None:
+            yield resolved, lineno
+
+
+def _dart_resolve(uri: str, file: Path, src: Path, pkg: str) -> str | None:
+    if uri.startswith("dart:"):
+        return None
+    if uri.startswith("package:"):
+        head, _, tail = uri[len("package:"):].partition("/")
+        if not pkg or head != pkg or not tail:
+            return None
+        return tail                          # already a lib/-relative slash path
+    target = (file.parent / uri).resolve()   # relative URI
+    try:
+        return "/".join(target.relative_to(src).parts)
+    except ValueError:
+        return None                          # outside lib/ — external
+
+
 _EXTRACTORS = {
     "python": _py_imports,
     "go": _go_imports,
     "typescript": _ts_imports,
+    "dart": _dart_imports,
 }
