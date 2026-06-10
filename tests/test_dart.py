@@ -229,6 +229,32 @@ def test_disallowed_targets_is_pure_and_correct(dart_project):
     assert a.disallowed_targets(dart_project, accounts, svc, pkg_bad) == {"billing"}
 
 
+# ---- deep nesting: multi-level ../../ must canonicalize correctly ----------- #
+# Flutter trees nest deeper than the flat scaffold (e.g. feature/screens/widgets),
+# so a relative import that climbs more than one level is the common real case.
+# This guards both graders against a future change that breaks `../` collapsing
+# or limits source discovery to a single directory level.
+def test_disallowed_targets_resolves_multilevel_relative(dart_project):
+    a = get_adapter("dart")
+    accounts = dart_project.by_name()["accounts"]
+    deep = dart_project.root / "lib/domains/accounts/sub/deep.dart"
+    # importer two levels deep; `../../billing/...` climbs to domains/ then descends.
+    bad = "import '../../billing/service.dart';\n\nclass Deep {}\n"
+    ok = "import '../service.dart';\n\nclass Deep {}\n"   # stays inside accounts
+    assert a.disallowed_targets(dart_project, accounts, deep, bad) == {"billing"}
+    assert a.disallowed_targets(dart_project, accounts, deep, ok) == set()
+
+
+def test_check_discovers_and_flags_nested_violation(dart_project):
+    # `check` must recurse into subdirectories AND resolve the deep `../../` edge,
+    # attributing it to the module that owns the nested file (accounts).
+    deep = dart_project.root / "lib/domains/accounts/sub/deep.dart"
+    deep.parent.mkdir(parents=True, exist_ok=True)
+    deep.write_text("import '../../billing/service.dart';\n\nclass Deep {}\n")
+    violations = get_adapter("dart").check(load_project(dart_project.root), backend="builtin")
+    assert any(v.module == "accounts" and "billing" in v.message for v in violations)
+
+
 # ---- the PreToolUse hook routes .dart edits through the Dart adapter -------- #
 def test_hook_blocks_new_dart_violation(dart_project):
     acc = dart_project.root / "lib/domains/accounts/service.dart"
