@@ -185,15 +185,17 @@ def test_default_ignore_skips_node_modules(tmp_path):
 def test_exclude_skips_files_inside_a_scanned_module(tmp_path):
     # `exclude` must filter files WITHIN a checked module, not only module
     # discovery. A cross-boundary import in an excluded subtree is not a violation.
+    # Force the builtin engine (this fix targets the builtin scanners + hook;
+    # tach has its own config and is selected only when installed).
     init_project(tmp_path)
     pres = tmp_path / "src/domains/accounts/presentation/screen.py"
     pres.parent.mkdir(parents=True)
     pres.write_text("from domains.billing.service import total_invoiced\n")
-    assert len(check(load_project(tmp_path))) == 1          # flagged without exclude
+    assert len(check(load_project(tmp_path), engine="builtin")) == 1     # flagged
     (tmp_path / "anma.yaml").write_text(
         "schema_version: 1\nsource_roots: [src]\n"
         'exclude:\n  - "src/domains/accounts/presentation/*"\n')
-    assert check(load_project(tmp_path)) == []              # suppressed with exclude
+    assert check(load_project(tmp_path), engine="builtin") == []         # suppressed
 
 
 def test_hook_allows_edit_to_excluded_file(tmp_path):
