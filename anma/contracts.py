@@ -52,6 +52,7 @@ class Project:
     modules: list[ModuleContract]
     language: str = "python"
     metadata: dict = field(default_factory=dict)  # per-language cache read once at load (no subprocess)
+    excludes: list[str] = field(default_factory=list)  # paths skipped by discovery AND scanning
 
     def by_name(self) -> dict[str, ModuleContract]:
         return {m.name: m for m in self.modules}
@@ -66,6 +67,26 @@ def _is_ignored(rel: Path, excludes: list[str]) -> bool:
         if posix == pat or posix.startswith(pat + "/") or fnmatch.fnmatch(posix, pat):
             return True
     return False
+
+
+def is_excluded(project: "Project", file: Path) -> bool:
+    """True if ``file`` (repo-relative) is filtered by DEFAULT_IGNORE or the
+    project's ``exclude`` patterns. Used by both check() and the edit hook so
+    the two agree on what is in scope."""
+    try:
+        rel = file.resolve().relative_to(project.root)
+    except ValueError:
+        return False
+    return _is_ignored(rel, project.excludes)
+
+
+def iter_source_files(project: "Project", module: "ModuleContract", globs):
+    """Yield files under ``module.path`` matching ``globs``, skipping
+    DEFAULT_IGNORE dirs and the project's ``exclude`` patterns. Single source of
+    truth for file discovery so every adapter applies identical scope rules."""
+    for f in sorted(p for g in globs for p in module.path.rglob(g)):
+        if not is_excluded(project, f):
+            yield f
 
 
 def _read_yaml(path: Path) -> dict:
@@ -134,7 +155,7 @@ def load_project(root: Path) -> Project:
     return Project(root=root, source_roots=list(roots),
                    python_version=python_version,
                    schema_version=schema_version, modules=modules,
-                   language=language, metadata=metadata)
+                   language=language, metadata=metadata, excludes=excludes)
 
 
 def validate(project: Project) -> list[str]:

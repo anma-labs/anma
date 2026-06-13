@@ -182,6 +182,58 @@ def test_default_ignore_skips_node_modules(tmp_path):
     assert "junk" not in names
 
 
+def test_exclude_skips_files_inside_a_scanned_module(tmp_path):
+    # `exclude` must filter files WITHIN a checked module, not only module
+    # discovery. A cross-boundary import in an excluded subtree is not a violation.
+    # Force the builtin engine (this fix targets the builtin scanners + hook;
+    # tach has its own config and is selected only when installed).
+    init_project(tmp_path)
+    pres = tmp_path / "src/domains/accounts/presentation/screen.py"
+    pres.parent.mkdir(parents=True)
+    pres.write_text("from domains.billing.service import total_invoiced\n")
+    assert len(check(load_project(tmp_path), engine="builtin")) == 1     # flagged
+    (tmp_path / "anma.yaml").write_text(
+        "schema_version: 1\nsource_roots: [src]\n"
+        'exclude:\n  - "src/domains/accounts/presentation/*"\n')
+    assert check(load_project(tmp_path), engine="builtin") == []         # suppressed
+
+
+def test_hook_allows_edit_to_excluded_file(tmp_path):
+    # the edit hook must agree with check(): no blocking edits to excluded paths.
+    init_project(tmp_path)
+    (tmp_path / "anma.yaml").write_text(
+        "schema_version: 1\nsource_roots: [src]\n"
+        'exclude:\n  - "src/domains/accounts/presentation/*"\n')
+    sync(load_project(tmp_path))
+    pres = tmp_path / "src/domains/accounts/presentation/screen.py"
+    pres.parent.mkdir(parents=True)
+    body = "from domains.billing.service import total_invoiced\n"
+    assert run_hook(_payload("Write", pres, content=body)) == ALLOW
+
+
+@pytest.mark.parametrize("lang,fname", [
+    ("python", "x.py"), ("dart", "x.dart"), ("go", "x.go"), ("typescript", "x.ts"),
+])
+def test_exclude_is_consistent_across_languages(tmp_path, lang, fname):
+    # cross-language invariant: every adapter scans through iter_source_files,
+    # so an excluded intra-module file is out of scope identically in all of them.
+    from anma.contracts import iter_source_files, is_excluded
+    from anma.adapters import get_adapter
+    init_project(tmp_path, language=lang)
+    acc = load_project(tmp_path).by_name()["accounts"]
+    f = acc.path / "presentation" / fname
+    f.parent.mkdir(parents=True)
+    f.write_text("// x\n")
+    globs = getattr(get_adapter(lang), "file_globs", ("*.py",))
+    p0 = load_project(tmp_path)
+    assert f in set(iter_source_files(p0, p0.by_name()["accounts"], globs))
+    (tmp_path / "anma.yaml").write_text((tmp_path / "anma.yaml").read_text()
+        + f'\nexclude:\n  - "{f.parent.relative_to(tmp_path).as_posix()}/*"\n')
+    p1 = load_project(tmp_path)
+    assert f not in set(iter_source_files(p1, p1.by_name()["accounts"], globs))
+    assert is_excluded(p1, f)
+
+
 # ---- v0.5.1: hook judges the proposed edit; tach expose paths qualified ----
 import json as _json
 from anma.hook import run_hook, ALLOW, BLOCK

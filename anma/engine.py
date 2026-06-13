@@ -13,7 +13,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from .contracts import ModuleContract, Project
+from .contracts import ModuleContract, Project, iter_source_files
 
 
 @dataclass
@@ -119,7 +119,7 @@ def _check_builtin(project: Project) -> list[Violation]:
     for m in project.modules:
         allowed = set(m.depends_on) | {m.name}
         deprecated = set(m.deprecated_deps)
-        for py in sorted(m.path.rglob("*.py")):
+        for py in iter_source_files(project, m, ("*.py",)):
             try:
                 tree = ast.parse(py.read_text(), filename=str(py))
             except SyntaxError:
