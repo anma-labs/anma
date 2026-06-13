@@ -30,7 +30,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 from . import engine
-from .contracts import ModuleContract, Project
+from .contracts import ModuleContract, Project, iter_source_files
 
 # --------------------------------------------------------------------------- #
 # Lightweight, dependency-free import scanner (used by the builtin fallback and #
@@ -273,7 +273,7 @@ class GoAdapter:
         for m in project.modules:
             allowed = set(m.depends_on) | {m.name}
             deprecated = set(m.deprecated_deps)
-            for go in sorted(m.path.rglob("*.go")):
+            for go in iter_source_files(project, m, self.file_globs):
                 if go.name.endswith("_test.go"):
                     continue
                 try:

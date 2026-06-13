@@ -19,7 +19,7 @@ import json
 import sys
 from pathlib import Path
 
-from .contracts import load_project
+from .contracts import load_project, is_excluded
 from .adapters import any_adapter_handles, get_adapter
 from .engine import module_for_file
 
@@ -88,6 +88,8 @@ def run_hook(stdin_text: str) -> int:
     module = module_for_file(project, file)
     if module is None:
         return ALLOW
+    if is_excluded(project, file):
+        return ALLOW  # excluded from boundary checks; CI ignores it, so must the hook
 
     current = file.read_text() if file.exists() else ""
     proposed = _proposed_content(data.get("tool_name", ""), tool_input, current)

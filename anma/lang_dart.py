@@ -36,7 +36,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 from . import engine
-from .contracts import ModuleContract, Project
+from .contracts import ModuleContract, Project, iter_source_files
 
 # --------------------------------------------------------------------------- #
 # Lightweight, dependency-free import detector (builtin backend + hook path).    #
@@ -295,7 +295,7 @@ class DartAdapter:
         for m in project.modules:
             allowed = set(m.depends_on) | {m.name}
             deprecated = set(m.deprecated_deps)
-            for f in sorted(p for g in self.file_globs for p in m.path.rglob(g)):
+            for f in iter_source_files(project, m, self.file_globs):
                 try:
                     text = f.read_text()
                 except (OSError, UnicodeDecodeError):
